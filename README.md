@@ -1,2 +1,2 @@
-# daily-stats-for-reddit
+# Daily stats for Reddit
 r/CryptoCurrency daily stats
