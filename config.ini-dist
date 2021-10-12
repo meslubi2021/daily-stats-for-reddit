@@ -6,8 +6,8 @@ MARKET_CAP_URL=https://api.coingecko.com/api/v3/coins/markets
 MORE_COMMENTS_LIMIT
 
 [PRAW]
-CLIENT_ID=xxxxxxx
-CLIENT_SECRET=xxxxxxx
+CLIENT_ID=xxxxx
+CLIENT_SECRET=xxxxx
 
 [REDDIT]
 SUBREDDIT=CryptoCurrency

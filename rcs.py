@@ -1,11 +1,9 @@
 import praw
-import requests
-import requests.auth
-import json
 import re
 import time
 from coin_and_count import CoinAndCount
 import configparser
+import utils
 
 # config read
 config = configparser.ConfigParser(allow_no_value=True)
@@ -21,21 +19,23 @@ MORE_COMMENTS_LIMIT = config.get('GENERAL','MORE_COMMENTS_LIMIT',fallback=None)
 if MORE_COMMENTS_LIMIT: MORE_COMMENTS_LIMIT = int(MORE_COMMENTS_LIMIT)
 
 print("Fetching updated list of crypto...")
-headers = {
-    'User-Agent': USER_AGENT
-} 
-coins = json.loads(requests.get(COINS_LIST_URL, headers=headers).text)
+# coins are fetched already sorted by market cap ascending so that the last that are added 
+# to the dictionary overwrite automatically any duplicate name or symbol keys of
+# less popular coins. This way when a certain "duplicate" name or symbol is mentioned,
+# we will count it as the most popular (more likely to be mentioned) coin.
+coins = utils.get_all_by_market_cap_asc()
 
 coins_dict = {}
 coin_and_counts = set()
-
+       
 # Using a dict object to provide a duplicate key to update the values stored in the coin_and_counts
 # set. This way we can increment a single counter whenever either the coin symbol OR the name are 
 # mentioned. 
 for coin in coins:
-    coin_symbol = coin["symbol"].upper()
-    coin_name = coin["name"]
-    cac = CoinAndCount(name=coin_symbol)
+    coin_id = coin["id"]
+    coin_symbol = coin["symbol"].upper() # only match symbols that are uppercase
+    coin_name = coin["name"].lower() # only match names that are lowercase
+    cac = CoinAndCount(name = coin_name, symbol = coin_symbol, id = coin_id)
     coin_and_counts.add(cac)
     coins_dict.update({coin_symbol : cac})
     coins_dict.update({coin_name : cac})
