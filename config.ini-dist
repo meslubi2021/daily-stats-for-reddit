@@ -2,13 +2,22 @@
 USER_AGENT=Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:80.0) Gecko/20100101 Firefox/80.0
 COINS_LIST_URL=https://api.coingecko.com/api/v3/coins/list
 MARKET_CAP_URL=https://api.coingecko.com/api/v3/coins/markets
-# leave this without value for no limit.
-MORE_COMMENTS_LIMIT
+CACHE_CRYPTO_DICT=True
+# coins with market cap lower than this will be ignored
+MIN_MARKET_CAP=2000000
+# leave this with no value for no limit.
+MORE_COMMENTS_LIMIT=0
 
 [PRAW]
-CLIENT_ID=xxxxx
-CLIENT_SECRET=xxxxx
+CLIENT_ID=xxxxxxxxxx
+CLIENT_SECRET=xxxxxxxxxx
 
 [REDDIT]
 SUBREDDIT=CryptoCurrency
 
+[DB]
+USER=xxxxxxxxxx
+PASSWORD=xxxxxxxxxx
+DB_HOST=xxxx.xxxx.xxxx.xxxx.xxxx/xxxxx
+DB_NAME=xxxxxxxxxx
+DB_NAME=xxxxxxxxxx

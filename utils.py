@@ -1,8 +1,8 @@
 import requests
 import configparser
 import json
-from time import sleep
 import time
+from time import sleep
 from random import choice, uniform
 
 config = configparser.ConfigParser(allow_no_value=True)
@@ -29,6 +29,7 @@ USER_AGENTS = [
 ]
 
 MARKET_CAP_API_URL = config.get('GENERAL','MARKET_CAP_URL')
+MIN_MARKET_CAP = int(config.get('GENERAL','MIN_MARKET_CAP'))
 
 def rand_sleep(start, end):
     sleep(uniform(start, end))
@@ -36,6 +37,7 @@ def rand_sleep(start, end):
 def random_ua():
     return choice(USER_AGENTS)
 
+# unused
 def sort_by_market_cap(ids):
     rand_sleep(0,2)
     ids_str = ",".join(ids)
@@ -59,6 +61,7 @@ def get_all_by_market_cap_asc():
     ua = random_ua()
     all_coins = []
     while(True):
+        time.sleep(0.5)
         print("Fetching page: "+str(page))
         params = {
             "vs_currency": "usd",
@@ -71,9 +74,14 @@ def get_all_by_market_cap_asc():
             'User-Agent': ua
         }
         result = json.loads(requests.get(MARKET_CAP_API_URL, params=params, headers=headers).text)
-        page += 1
         if len(result) == 0:
             break
+        page += 1
+        mc = result[len(result)-1]["market_cap"]
+        if mc and mc < MIN_MARKET_CAP:
+            continue
         all_coins.extend(result)
-        time.sleep(1)
     return all_coins
+
+def mongescape(w):
+    return w.replace("$", "[S]")
