@@ -11,6 +11,14 @@ from coin_and_count import CoinAndCount, Comment
 from argparse import ArgumentParser
 import numpy as np
 
+# Due to the high amount of cryptos that share names or symbol that are commonly used,
+# the script can't always return reliable results. The algorithms trade accuracy for 
+# lower amount of false positives while the following rules are applied:
+# [1] Only symbol that are completely uppercase are matched
+# [2] Only names that are capitalized are matched
+# [3] Capitalized names that follow a dot or are the first word of a sentence are ignored
+# [4] Oh and we have a blacklist
+
 # config read
 config = configparser.ConfigParser(allow_no_value=True)
 config.read('config.ini')
@@ -97,10 +105,14 @@ def search_reddit(coins_dict):
             submission.comments.replace_more(limit=MORE_COMMENTS_LIMIT)
             time_elapsed_fetch = time.time() - start_fetch
             flattened_list = submission.comments.list()
-            print("Took: " + str(time_elapsed_fetch) + " seconds to fetch: " + str(len(flattened_list)) + " comments.\nParsing comments content...")
+            print("Fetched " + str(len(flattened_list)) + " comments in " + str(time_elapsed_fetch) + " seconds.\nParsing comments content...")
             for comment in flattened_list:
                 if comment.body:
                     for word in re.split('\W+', comment.body):
+                        if not utils.is_unnaturally_capital(word, comment.body):
+                            continue
+                        if utils.blacklisted(word):
+                            continue
                         word = utils.mongescape(word)
                         if word in coins_dict:
                             coins_dict[word].increment()

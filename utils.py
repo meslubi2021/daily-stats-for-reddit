@@ -85,3 +85,35 @@ def get_all_by_market_cap_asc():
 
 def mongescape(w):
     return w.replace("$", "[S]")
+
+# returns true for words that seem to be intentionally capitalized
+def is_unnaturally_capital(w, s):
+    if not w or not w[0].isupper:
+        return False
+    s_dot_split = s.split(".")
+    for w_s in s_dot_split:
+        for word_check in w_s.strip().split(" ")[1:]:
+            if word_check == w:
+                return True
+    return False
+
+def blacklisted(w):
+    return w in BLACKLIST
+
+BLACKLIST = [
+    'NFT',
+    'DCA',
+    'ETF',
+    'YES',
+    'HODL',
+    'U',
+    'APY',
+    'IT',
+    'HODL',
+    'LOL',
+    'CC',
+    'X',
+    'D',
+    'DEX',
+    'PUMP'
+]
