@@ -6,6 +6,7 @@ import utils
 import pymongo
 import urllib
 import ssl
+import json
 from distutils import util
 from coin_and_count import CoinAndCount, Comment
 from argparse import ArgumentParser
@@ -72,6 +73,9 @@ def load_crypto_collection():
     # less popular coins. This way when a certain "duplicate" name or symbol is mentioned,
     # we will count it as the most popular (more likely to be mentioned) coin.
     coins = utils.get_all_by_market_cap_asc()
+    # coins added manually are placed in the end of the array in order to overwrite any colliding ones:
+    with open("res/additional_coins.json", "r") as other_coins:
+        coins.extend(json.load(other_coins))
     # Using a dict object to provide a duplicate key to update the values stored in the coin_and_counts
     # set. This way we can increment a single counter whenever either the coin symbol OR the name are 
     # mentioned. 
@@ -84,6 +88,22 @@ def load_crypto_collection():
         coins_dict.update({coin_name : cac})
     np.save(CRYPTO_DICT_NAME, coins_dict) 
     return coins_dict
+
+def scan_and_add(coins_dict, comment):
+    if comment.body:
+        for word in re.split('\W+', comment.body):
+            if not utils.is_unnaturally_capital(word, comment.body):
+                continue
+            if utils.blacklisted(word):
+                continue
+            if comment.body.isupper():
+                continue
+            word = utils.mongescape(word)
+            if word in coins_dict:
+                coins_dict[word].increment()
+                my_comment = Comment(comment.author.name, comment.created_utc, comment.ups, 
+                                     comment.downs, comment.total_awards_received)
+                coins_dict[word].comments.append(my_comment.__dict__)
 
 def search_reddit(coins_dict):
     reddit = praw.Reddit(
@@ -107,21 +127,8 @@ def search_reddit(coins_dict):
             print("Fetched " + str(len(flattened_list)) + " comments in " + str(time_elapsed_fetch) + 
                   " seconds.\nParsing comments content...")
             for comment in flattened_list:
-                if comment.body:
-                    for word in re.split('\W+', comment.body):
-                        if not utils.is_unnaturally_capital(word, comment.body):
-                            continue
-                        if utils.blacklisted(word):
-                            continue
-                        if comment.body.isupper():
-                            continue
-                        word = utils.mongescape(word)
-                        if word in coins_dict:
-                            coins_dict[word].increment()
-                            my_comment = Comment(comment.author.name, comment.created_utc, comment.ups, 
-                                                 comment.downs, comment.total_awards_received)
-                            coins_dict[word].comments.append(my_comment.__dict__)
-
+                scan_and_add(coins_dict, comment)
+                
 def store_to_db(coins_dict):
     r = coins_dict
     for k, v in r.items():   
@@ -147,10 +154,15 @@ def store_to_db(coins_dict):
         print("Done.")
 
 def print_sample_output(coin_and_counts):
+    output = ""
     for count, coin in enumerate(sorted(coin_and_counts, key = lambda x: x.count, reverse = True)):
-        print(coin.name + "(" + coin.symbol + "): " + str(coin.count))
+        s_out = coin.name + "(" + coin.symbol + "): " + str(coin.count)
+        print(s_out)
+        output += "\n" + s_out
         if count > 100:
             break
+        with open("output.txt", "w") as text_file:
+            text_file.write(output)
 
 if __name__ == "__main__":
     print("Fetching updated list of crypto...")
