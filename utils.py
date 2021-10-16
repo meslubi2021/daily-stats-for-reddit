@@ -115,5 +115,7 @@ BLACKLIST = [
     'X',
     'D',
     'DEX',
-    'PUMP'
+    'PUMP',
+    'ATH',
+    'FOMO'
 ]

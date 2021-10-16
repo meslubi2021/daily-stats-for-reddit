@@ -17,7 +17,8 @@ import numpy as np
 # [1] Only symbol that are completely uppercase are matched
 # [2] Only names that are capitalized are matched
 # [3] Capitalized names that follow a dot or are the first word of a sentence are ignored
-# [4] Oh and we have a blacklist
+# [4] All capital messages are ignored
+# [5] Oh and we have a blacklist
 
 # config read
 config = configparser.ConfigParser(allow_no_value=True)
@@ -50,7 +51,7 @@ parser = ArgumentParser()
 parser.add_argument("-w", "--write", dest="writedb", action='store_true',
                     help="write to DB.")
 parser.add_argument("-p", "--print", dest="print", action='store_true',
-                    help="print result to console.")
+                    help="print result to console.")                  
 args = parser.parse_args()
 
 # downloads the crypto list and loads it in a dictionary with the appropriate keys to scan
@@ -81,9 +82,7 @@ def load_crypto_collection():
         cac = CoinAndCount(name = coin_name, symbol = coin_symbol, id = coin_id)
         coins_dict.update({coin_symbol : cac})
         coins_dict.update({coin_name : cac})
-    
-    if CACHE_CRYPTO_DICT:
-        np.save(CRYPTO_DICT_NAME, coins_dict) 
+    np.save(CRYPTO_DICT_NAME, coins_dict) 
     return coins_dict
 
 def search_reddit(coins_dict):
@@ -105,7 +104,8 @@ def search_reddit(coins_dict):
             submission.comments.replace_more(limit=MORE_COMMENTS_LIMIT)
             time_elapsed_fetch = time.time() - start_fetch
             flattened_list = submission.comments.list()
-            print("Fetched " + str(len(flattened_list)) + " comments in " + str(time_elapsed_fetch) + " seconds.\nParsing comments content...")
+            print("Fetched " + str(len(flattened_list)) + " comments in " + str(time_elapsed_fetch) + 
+                  " seconds.\nParsing comments content...")
             for comment in flattened_list:
                 if comment.body:
                     for word in re.split('\W+', comment.body):
@@ -113,10 +113,13 @@ def search_reddit(coins_dict):
                             continue
                         if utils.blacklisted(word):
                             continue
+                        if comment.body.isupper():
+                            continue
                         word = utils.mongescape(word)
                         if word in coins_dict:
                             coins_dict[word].increment()
-                            my_comment = Comment(comment.author.name, comment.created_utc, comment.ups, comment.downs, comment.total_awards_received)
+                            my_comment = Comment(comment.author.name, comment.created_utc, comment.ups, 
+                                                 comment.downs, comment.total_awards_received)
                             coins_dict[word].comments.append(my_comment.__dict__)
 
 def store_to_db(coins_dict):
@@ -140,9 +143,10 @@ def store_to_db(coins_dict):
             print(str(type(v)))
             n[k] = v
         coins_collection.insert_one(n)
+    finally:
+        print("Done.")
 
-def print_sample_output(coins_dict):
-    coin_and_counts = set(coins_dict.values())
+def print_sample_output(coin_and_counts):
     for count, coin in enumerate(sorted(coin_and_counts, key = lambda x: x.count, reverse = True)):
         print(coin.name + "(" + coin.symbol + "): " + str(coin.count))
         if count > 100:
@@ -153,10 +157,13 @@ if __name__ == "__main__":
     coins_dict = load_crypto_collection()
     print("Searching Reddit for crypto mentions")
     search_reddit(coins_dict)
+    coin_and_counts = set([v for v in coins_dict.values() if v.count > 0])
     if args.print:
         print("Done:\n")
-        print_sample_output(coins_dict)
+        print_sample_output(coin_and_counts)
     if args.writedb:
-        store_to_db(coins_dict)
+        print("Storing to DB...\n")
+        d = {se.symbol:se for se in coin_and_counts}
+        store_to_db(d)
 
 
