@@ -18,8 +18,8 @@ import numpy as np
 # [1] Only symbol that are completely uppercase are matched
 # [2] Only names that are capitalized are matched
 # [3] Capitalized names that follow a dot or are the first word of a sentence are ignored
-# [4] All capital messages are ignored
-# [5] Oh and we have a blacklist
+#     if they are also a common English word
+# [4] Oh and we have a blacklist
 
 # config read
 config = configparser.ConfigParser(allow_no_value=True)
@@ -95,8 +95,6 @@ def scan_and_add(coins_dict, comment):
             if not utils.is_unnaturally_capital(word, comment.body):
                 continue
             if utils.blacklisted(word):
-                continue
-            if comment.body.isupper():
                 continue
             word = utils.mongescape(word)
             if word in coins_dict:

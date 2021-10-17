@@ -2,11 +2,18 @@ import requests
 import configparser
 import json
 import time
+import json
+import re
 from time import sleep
 from random import choice, uniform
 
 config = configparser.ConfigParser(allow_no_value=True)
 config.read('config.ini')
+common_words_dictionary = {}
+
+with open("res/common_words.json", "r") as common_words:
+    common_words_dictionary = json.load(common_words)
+
 
 USER_AGENTS = [
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Safari/537.36',
@@ -87,13 +94,18 @@ def mongescape(w):
     return w.replace("$", "[S]")
 
 # returns true for words that seem to be intentionally capitalized
-def is_unnaturally_capital(w, s):
-    if not w or not w[0].isupper:
+# and are not too common (are likely to be coin names)
+def is_unnaturally_capital(w, body):
+    # check capitalized words
+    if not w or not w[0].isupper():
         return False
-    s_dot_split = s.split(".")
-    for w_s in s_dot_split:
-        for word_check in w_s.strip().split(" ")[1:]:
-            if word_check == w:
+    body = re.sub("[^a-zA-Z\d\s:\.]", "", body)
+    b_split = re.split("\.\s*|\n", body)
+    for sentence in b_split:
+        for count, word in enumerate(sentence.strip().split(" ")):
+            if word == w:
+                if count == 0 and word.lower() in common_words_dictionary:
+                    return False
                 return True
     return False
 
