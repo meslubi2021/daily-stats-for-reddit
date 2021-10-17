@@ -11,10 +11,17 @@ TEST_MESSAGES_VALID = [
     ('bitcoin is cool', 'bitcoin'),
     ('i like Ethereum so much', 'ethereum'),
     ('bought some Fear', 'fear'),
+    ('my fav: BTC, ETH, SOL', 'BTC'),
+    ('my fav: BTC, ETH, SOL', 'ETH'),
+    ('BTC, ETH, SOL!!', 'SOL'),
 ]
 
 TEST_MESSAGES_INVALID = [
+    ('have you seen that?', 'seen'),
+    ('cc is the best sub', 'cc'),
+    ('the best sub is CC', 'CC'),
     ('Coin is a nice word', 'coin'),
+    ('i like the word coin', 'coin'),
     ('Just do it', 'just'),
     ('This coin doesn\'t exists: Buzzurro', 'buzzurro'),
     ('I like shilling', 'shilling'),
