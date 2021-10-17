@@ -93,27 +93,29 @@ def get_all_by_market_cap_asc():
 def mongescape(w):
     return w.replace("$", "[S]")
 
-# returns true for words that seem to be intentionally capitalized
-# and are not too common (are likely to be coin names)
-def is_unnaturally_capital(w, body):
+# returns true for words that seem to be uncommon enough to be
+# considered coin mentions
+def is_uncommon(w, body):
     # check capitalized words
-    if not w or not w[0].isupper():
+    if not w:
         return False
     body = re.sub("[^a-zA-Z\d\s:\.]", "", body)
     b_split = re.split("\.\s*|\n", body)
     for sentence in b_split:
-        for count, word in enumerate(sentence.strip().split(" ")):
+        for index, word in enumerate(sentence.strip().split(" ")):
             if word == w:
-                if count == 0 and word.lower() in common_words_dictionary:
+                # each word at index 0 is expected to be capitalized
+                if (index == 0 or not w[0].isupper()) and word.lower() in common_words_dictionary:
                     return False
-                return True
-    return False
+    return True
 
 def blacklisted(w):
     return w in BLACKLIST
 
 BLACKLIST = [
     'NFT',
+    'QC',
+    'YT',
     'DCA',
     'ETF',
     'YES',

@@ -124,6 +124,7 @@
     "urge": "29531",
     "especially": "186130",
     "credit": "15608",
+    "credits": "15608",
     "equality": "16126",
     "value": "195639",
     "robot": "20517",
@@ -3352,6 +3353,7 @@
     "wing": "44427",
     "undertake": "14043",
     "golden": "41056",
+    "platinum": "41056",
     "survive": "65838",
     "welcome": "24515",
     "gene": "43463",
@@ -4380,5 +4382,11 @@
     "reference": "54390",
     "T-shirt": "17501",
     "merchant": "11955",
-    "relax": "32948"
+    "relax": "32948",
+    "shilling": "10000",
+    "shitcoin": "14506",
+    "idk": "14506",
+    "cc": "10000",
+    "rewards": "21978",
+    "gains": "21978"
 }

@@ -16,10 +16,8 @@ import numpy as np
 # the script can't always return reliable results. The algorithms trade accuracy for 
 # lower amount of false positives while the following rules are applied:
 # [1] Only symbol that are completely uppercase are matched
-# [2] Only names that are capitalized are matched
-# [3] Capitalized names that follow a dot or are the first word of a sentence are ignored
-#     if they are also a common English word
-# [4] Oh and we have a blacklist
+# [2] Common English words are ignored unless they seem to be intentionally capitalized
+# [3] Oh and we have a blacklist
 
 # config read
 config = configparser.ConfigParser(allow_no_value=True)
@@ -82,7 +80,7 @@ def load_crypto_collection():
     for coin in coins:
         coin_id = coin["id"]
         coin_symbol = utils.mongescape(coin["symbol"].upper()) # only match symbols that are uppercase
-        coin_name = utils.mongescape(coin["name"].capitalize()) # only match names that are capitalized
+        coin_name = utils.mongescape(coin["name"].lower())
         cac = CoinAndCount(name = coin_name, symbol = coin_symbol, id = coin_id)
         coins_dict.update({coin_symbol : cac})
         coins_dict.update({coin_name : cac})
@@ -92,11 +90,10 @@ def load_crypto_collection():
 def scan_and_add(coins_dict, comment):
     if comment.body:
         for word in re.split('\W+', comment.body):
-            if not utils.is_unnaturally_capital(word, comment.body):
-                continue
-            if utils.blacklisted(word):
-                continue
+            if not utils.is_uncommon(word, comment.body): continue # filter out common words
+            if utils.blacklisted(word): continue # apply blacklist
             word = utils.mongescape(word)
+            if not word.isupper(): word = word.lower() # lower words that are not completely upper
             if word in coins_dict:
                 coins_dict[word].increment()
                 my_comment = Comment(comment.author.name, comment.created_utc, comment.ups, 
