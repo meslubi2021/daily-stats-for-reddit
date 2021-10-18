@@ -1,7 +1,8 @@
 [
     {
-    "id":"reddis_moons",
-    "symbol":"MOON",
-    "name":"Moons"
+        "name": "Moons",
+        "id": "moon",
+        "symbol": "moon",
+        "market_cap": 0
     }
 ]

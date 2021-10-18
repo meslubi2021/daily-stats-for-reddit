@@ -71,17 +71,14 @@ def load_crypto_collection():
     # less popular coins. This way when a certain "duplicate" name or symbol is mentioned,
     # we will count it as the most popular (more likely to be mentioned) coin.
     coins = utils.get_all_by_market_cap_asc()
-    # coins added manually are placed in the end of the array in order to overwrite any colliding ones:
-    with open("res/additional_coins.json", "r") as other_coins:
-        coins.extend(json.load(other_coins))
+
     # Using a dict object to provide a duplicate key to update the values stored in the coin_and_counts
     # set. This way we can increment a single counter whenever either the coin symbol OR the name are 
     # mentioned. 
     for coin in coins:
-        coin_id = coin["id"]
-        coin_symbol = utils.mongescape(coin["symbol"].upper()) # only match symbols that are uppercase
-        coin_name = utils.mongescape(coin["name"].lower())
-        cac = CoinAndCount(name = coin_name, symbol = coin_symbol, id = coin_id)
+        coin_symbol = utils.mongescape(coin['symbol'].upper()) # only match symbols that are uppercase
+        coin_name = utils.mongescape(coin['name'].lower())
+        cac = CoinAndCount(coin_name, coin_symbol, coin = coin)
         coins_dict.update({coin_symbol : cac})
         coins_dict.update({coin_name : cac})
     np.save(CRYPTO_DICT_NAME, coins_dict) 

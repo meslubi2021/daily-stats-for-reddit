@@ -14,6 +14,9 @@ common_words_dictionary = {}
 with open("res/common_words.json", "r") as common_words:
     common_words_dictionary = json.load(common_words)
 
+with open("res/additional_coins.json", "r") as other_coins:
+    additional_coins = (json.load(other_coins))
+
 
 USER_AGENTS = [
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Safari/537.36',
@@ -36,6 +39,7 @@ USER_AGENTS = [
 ]
 
 MARKET_CAP_API_URL = config.get('GENERAL','MARKET_CAP_URL')
+SINGLE_COIN_API_URL = config.get('GENERAL','SINGLE_COIN_API_URL')
 MIN_MARKET_CAP = int(config.get('GENERAL','MIN_MARKET_CAP'))
 
 def rand_sleep(start, end):
@@ -68,26 +72,28 @@ def get_all_by_market_cap_asc():
     ua = random_ua()
     all_coins = []
     while(True):
-        time.sleep(0.5)
-        print("Fetching page: "+str(page))
-        params = {
-            "vs_currency": "usd",
-            "order": "market_cap_asc",
-            "per_page": 250,
-            "page": page,
-            "sparkline": "false"
-        }
-        headers = {
-            'User-Agent': ua
-        }
-        result = json.loads(requests.get(MARKET_CAP_API_URL, params=params, headers=headers).text)
-        if len(result) == 0:
-            break
-        page += 1
-        mc = result[len(result)-1]["market_cap"]
-        if mc and mc < MIN_MARKET_CAP:
-            continue
-        all_coins.extend(result)
+        with requests.Session() as s:
+            print("Fetching page: "+str(page))
+            params = {
+                "vs_currency": "usd",
+                "order": "market_cap_asc",
+                "per_page": 250,
+                "page": page,
+                "sparkline": "false"
+            }
+            headers = {
+                'User-Agent': ua
+            }
+            result = json.loads(s.get(MARKET_CAP_API_URL, params=params, headers=headers).text)
+            if len(result) == 0:
+                break
+            page += 1
+            highest_mc = result[len(result)-1]["market_cap"]
+            if highest_mc and highest_mc < MIN_MARKET_CAP:
+                continue
+            all_coins.extend(result)
+    # coins added manually are placed in the end of the array in order to overwrite any colliding ones in load_crypto_collection()
+    all_coins.extend(get_additional_coins())
     return all_coins
 
 def mongescape(w):
@@ -108,6 +114,53 @@ def is_uncommon(w, body):
                 if (index == 0 or not w[0].isupper()) and word.lower() in common_words_dictionary:
                     return False
     return True
+
+def get_additional_coins():
+    ret = []    
+    
+    for c in additional_coins:
+        ua = random_ua()
+        params = {
+            "tickers": "false",
+            "market_data": "true",
+            "community_data": "false",
+            "developer_data": "false",
+            "sparkline": "false"
+        }
+        headers = {
+            'User-Agent': ua
+        }
+        coin = json.loads(requests.get(SINGLE_COIN_API_URL + c["id"], params=params, headers=headers).text)
+        # overwrite name and market cap here to configure the fields as we like
+        if "name" in c:
+            coin["name"] = c["name"]  
+
+        coin["image"] = coin["image"]["small"]
+        coin["current_price"] = coin["market_data"]["current_price"]["usd"]
+        coin["price_change_24h"] = coin["market_data"]["price_change_24h"]
+        coin["price_change_percentage_24h"] = coin["market_data"]["price_change_percentage_24h"]
+        coin["market_cap_change_24h"] = coin["market_data"]["market_cap_change_24h"]
+        coin["market_cap_change_percentage_24h"] = coin["market_data"]["market_cap_change_percentage_24h"]
+        coin["circulating_supply"] = coin["market_data"]["circulating_supply"]
+        coin["total_supply"] = coin["market_data"]["total_supply"]
+        coin["max_supply"] = coin["market_data"]["max_supply"]
+        coin["roi"] = coin["market_data"]["roi"]
+        coin["market_cap_rank"] = coin["market_data"]["market_cap_rank"]
+        coin["market_cap"] = coin["market_data"]["market_cap"]["usd"]
+        coin["total_volume"] = coin["market_data"]["total_volume"]["usd"]
+        coin["high_24h"] = coin["market_data"]["high_24h"]["usd"]
+        coin["low_24h"] = coin["market_data"]["low_24h"]["usd"]
+        coin["ath"] = coin["market_data"]["ath"]["usd"]
+        coin["ath_change_percentage"] = coin["market_data"]["ath_change_percentage"]["usd"]
+        coin["ath_date"] = coin["market_data"]["ath_date"]["usd"]
+        coin["atl"] = coin["market_data"]["atl"]["usd"]
+        coin["atl_change_percentage"] = coin["market_data"]["atl_change_percentage"]["usd"]
+        coin["atl_date"] = coin["market_data"]["atl_date"]["usd"]
+
+        ret.append(coin)
+    
+    return ret
+
 
 def blacklisted(w):
     return w in BLACKLIST
@@ -131,5 +184,6 @@ BLACKLIST = [
     'DEX',
     'PUMP',
     'ATH',
-    'FOMO'
+    'FOMO',
+    'CMC'
 ]
