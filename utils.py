@@ -1,8 +1,6 @@
 import requests
 import configparser
 import json
-import time
-import json
 import re
 from time import sleep
 from random import choice, uniform
