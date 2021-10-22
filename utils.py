@@ -7,7 +7,10 @@ from time import sleep
 from random import choice, uniform
 
 config = configparser.ConfigParser(allow_no_value=True)
-config.read('config.ini')
+config_file = "config.ini"
+if not os.path.isfile(config_file):
+    config_file = "config.ini-dist"
+config.read(config_file)
 common_words_dictionary = {}
 
 with open("res/common_words.json", "r") as common_words:
