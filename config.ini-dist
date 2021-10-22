@@ -2,7 +2,8 @@
 USER_AGENT=Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:80.0) Gecko/20100101 Firefox/80.0
 COINS_LIST_URL=https://api.coingecko.com/api/v3/coins/list
 MARKET_CAP_URL=https://api.coingecko.com/api/v3/coins/markets
-CACHE_CRYPTO_DICT=True
+SINGLE_COIN_API_URL=https://api.coingecko.com/api/v3/coins/
+CACHE_CRYPTO_DICT=False
 # coins with market cap lower than this will be ignored
 MIN_MARKET_CAP=2000000
 # leave this with no value for no limit.
