@@ -1,3 +1,4 @@
+*.ini
 *.tool.py
 *.npy
 *.config
