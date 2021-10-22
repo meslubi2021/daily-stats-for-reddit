@@ -6,7 +6,7 @@ CACHE_CRYPTO_DICT=True
 # coins with market cap lower than this will be ignored
 MIN_MARKET_CAP=2000000
 # leave this with no value for no limit.
-MORE_COMMENTS_LIMIT=0
+MORE_COMMENTS_LIMIT
 
 [PRAW]
 CLIENT_ID=xxxxxxxxxx
@@ -20,4 +20,4 @@ USER=xxxxxxxxxx
 PASSWORD=xxxxxxxxxx
 DB_HOST=xxxx.xxxx.xxxx.xxxx.xxxx/xxxxx
 DB_NAME=xxxxxxxxxx
-DB_NAME=xxxxxxxxxx
+DB_COLLECTION=xxxx

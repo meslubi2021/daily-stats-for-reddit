@@ -6,11 +6,11 @@ import utils
 import pymongo
 import urllib
 import ssl
-import json
 from distutils import util
 from coin_and_count import CoinAndCount, Comment
 from argparse import ArgumentParser
 import numpy as np
+import os
 
 # Due to the high amount of cryptos that share names or symbol that are commonly used,
 # the script can't always return reliable results. The algorithms trade accuracy for 
@@ -21,20 +21,24 @@ import numpy as np
 
 # config read
 config = configparser.ConfigParser(allow_no_value=True)
-config.read('config.ini')
-CLIENT_ID = config.get('PRAW', 'CLIENT_ID')
-CLIENT_SECRET = config.get('PRAW', 'CLIENT_SECRET')
+config_file = "config.ini"
+if not os.path.isfile(config_file):
+    config_file = "config.ini-dist"
+config.read(config_file)
+
+CLIENT_ID = utils.get_env('CLIENT_ID') or config.get('PRAW', 'CLIENT_ID')
+CLIENT_SECRET = utils.get_env("CLIENT_SECRET") or config.get('PRAW', 'CLIENT_SECRET')
 SUBREDDIT = config.get('REDDIT', 'SUBREDDIT')
-USER = config.get('DB', 'USER')
-PASSWORD = urllib.parse.quote_plus(config.get('DB', 'PASSWORD'))
-DB_HOST = config.get('DB', 'DB_HOST')
-DB_NAME = config.get('DB', 'DB_NAME')
+USER = utils.get_env("USER") or config.get('DB', 'USER')
+PASSWORD = utils.get_env("PASSWORD") or urllib.parse.quote_plus(config.get('DB', 'PASSWORD'))
+DB_HOST = utils.get_env("DB_HOST") or config.get('DB', 'DB_HOST')
+DB_NAME = utils.get_env("DB_NAME") or config.get('DB', 'DB_NAME')
 DB_COLLECTION = config.get('DB', 'DB_COLLECTION')
 USER_AGENT = config.get('GENERAL', 'USER_AGENT')
 COINS_LIST_URL = config.get('GENERAL', 'COINS_LIST_URL')
-MORE_COMMENTS_LIMIT = config.get('GENERAL', 'MORE_COMMENTS_LIMIT', fallback=None)
+MORE_COMMENTS_LIMIT = utils.get_env("MORE_COMMENTS_LIMIT") or config.get('GENERAL', 'MORE_COMMENTS_LIMIT', fallback=None)
 if MORE_COMMENTS_LIMIT: MORE_COMMENTS_LIMIT = int(MORE_COMMENTS_LIMIT)
-CACHE_CRYPTO_DICT = bool(util.strtobool(config.get('GENERAL', 'CACHE_CRYPTO_DICT')))
+CACHE_CRYPTO_DICT = utils.get_env("CACHE_CRYPTO_DICT") or bool(util.strtobool(config.get('GENERAL', 'CACHE_CRYPTO_DICT')))
 
 # other const
 CRYPTO_DICT_NAME = "crypto_list.npy"

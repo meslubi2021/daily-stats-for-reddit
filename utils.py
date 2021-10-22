@@ -2,6 +2,7 @@ import requests
 import configparser
 import json
 import re
+import os
 from time import sleep
 from random import choice, uniform
 
@@ -112,6 +113,12 @@ def is_uncommon(w, body):
                 if (index == 0 or not w[0].isupper()) and word.lower() in common_words_dictionary:
                     return False
     return True
+
+def get_env(ENV):
+    try:
+        return os.environ[ENV]
+    except KeyError:
+        return ""
 
 def get_additional_coins():
     ret = []    
