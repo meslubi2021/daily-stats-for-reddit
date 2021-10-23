@@ -6,16 +6,17 @@ import utils
 import pymongo
 import urllib
 import ssl
+import os
+from datetime import datetime
 from distutils import util
 from coin_and_count import CoinAndCount, Comment
 from argparse import ArgumentParser
 import numpy as np
-import os
 
 # Due to the high amount of cryptos that share names or symbol that are commonly used,
 # the script can't always return reliable results. The algorithms trade accuracy for 
 # lower amount of false positives while the following rules are applied:
-# [1] Only symbol that are completely uppercase are matched
+# [1] Only symbols that are completely uppercase are matched
 # [2] Common English words are ignored unless they seem to be intentionally capitalized
 # [3] Oh and we have a blacklist
 
@@ -40,6 +41,7 @@ COINS_LIST_URL = config.get('GENERAL', 'COINS_LIST_URL')
 MORE_COMMENTS_LIMIT = utils.get_env("MORE_COMMENTS_LIMIT") or config.get('GENERAL', 'MORE_COMMENTS_LIMIT', fallback=None)
 if MORE_COMMENTS_LIMIT: MORE_COMMENTS_LIMIT = int(MORE_COMMENTS_LIMIT)
 CACHE_CRYPTO_DICT = utils.get_env("CACHE_CRYPTO_DICT") or bool(util.strtobool(config.get('GENERAL', 'CACHE_CRYPTO_DICT')))
+DAILY_DATE_RANGE = utils.get_env("DAILY_DATE_RANGE") or config.get('GENERAL', 'DAILY_DATE_RANGE')
 
 # other const
 CRYPTO_DICT_NAME = "crypto_list.npy"
@@ -49,6 +51,14 @@ URL = f"mongodb+srv://{USER}:{PASSWORD}@{DB_HOST}?retryWrites=true&w=majority"
 client = pymongo.MongoClient(URL, ssl_cert_reqs=ssl.CERT_NONE)
 db = client[DB_NAME]
 coins_collection = db[DB_COLLECTION]
+
+# reddit stuff
+reddit = praw.Reddit(
+        client_id=CLIENT_ID,
+        client_secret=CLIENT_SECRET,
+        user_agent=USER_AGENT,
+    )
+subreddit = reddit.subreddit(SUBREDDIT)
 
 # arg parsing
 parser = ArgumentParser()
@@ -103,34 +113,53 @@ def scan_and_add(coins_dict, comment):
                                      comment.depth, comment.permalink)
                 coins_dict[word].comments.append(my_comment.__dict__)
 
-def search_reddit(coins_dict):
-    reddit = praw.Reddit(
-        client_id=CLIENT_ID,
-        client_secret=CLIENT_SECRET,
-        user_agent=USER_AGENT,
-    )
-    subreddit = reddit.subreddit(SUBREDDIT)
-    print("Selected subreddit: " + subreddit.display_name)
-    print("Searching Daily Discussion...")
-    # scan first 10 hot submission, looking for the daily
+def grab_submission_comments(coins_dict, submission):
+    # traversing all comments with BFS
+    print("Scanning comments, this may take a while...")
+    start_fetch = time.time()
+    submission.comments.replace_more(limit = MORE_COMMENTS_LIMIT)
+    time_elapsed_fetch = time.time() - start_fetch
+    flattened_list = submission.comments.list()
+    print("Fetched " + str(len(flattened_list)) + " comments in " + str(time_elapsed_fetch) + 
+          " seconds.\nParsing comments content...")
+    for comment in flattened_list:
+        scan_and_add(coins_dict, comment)
+    # proceed to aggregate, print and/or store data
+    coin_and_counts = set([v for v in coins_dict.values() if v.count > 0 or (v.market_cap and int(v.market_cap) > 0)])
+
+    if args.print:
+        print("Done:\n")
+        print_sample_output(coin_and_counts)
+    if args.writedb:
+        print("Storing to DB...\n")
+        d = {se.symbol:se for se in coin_and_counts}
+        d['_submission_timestamp'] = str(submission.created_utc)
+        store_to_db(d)
+    
+def reddit_latest_daily(coins_dict):
+    print("Searching Latest Daily Discussion...")
+    # scan first 10 hot submission, looking for today's daily
     for submission in subreddit.hot(limit=10):
         if "Daily Discussion" in submission.title:
             print("Found: " + submission.title)
-            # traversing all comments with BFS
-            print("Scanning comments, this may take a while...")
-            start_fetch = time.time()
-            submission.comments.replace_more(limit=MORE_COMMENTS_LIMIT)
-            time_elapsed_fetch = time.time() - start_fetch
-            flattened_list = submission.comments.list()
-            print("Fetched " + str(len(flattened_list)) + " comments in " + str(time_elapsed_fetch) + 
-                  " seconds.\nParsing comments content...")
-            for comment in flattened_list:
-                scan_and_add(coins_dict, comment)
-                
+            grab_submission_comments(coins_dict, submission)
+            
+def reddit_range_dailies(coins_dict):
+    print("Searching Range of Daily Discussion...")
+    date_range = DAILY_DATE_RANGE.split("-")
+    date_range = [datetime.strptime(d, "%d/%m/%Y").date() for d in date_range]
+    dates = utils.get_dates_in_range(date_range[0], date_range[len(date_range) - 1])
+    daily_titles = [utils.generate_daily_title_format(date) for date in dates]
+    for daily_title in daily_titles:
+        for submission in subreddit.search(daily_title):
+            print("Found: " + submission.title)
+            grab_submission_comments(coins_dict, submission)
+
 def store_to_db(coins_dict):
     r = coins_dict
     for k, v in r.items():
-        r[k] = v.__dict__
+        if not isinstance(v, str):
+            r[k] = v.__dict__
     try:
         coins_collection.insert_one(r)
     except pymongo.errors.InvalidDocument:
@@ -163,15 +192,10 @@ def print_sample_output(coin_and_counts):
             text_file.write(output)
 
 if __name__ == "__main__":
-    print("Fetching updated list of crypto...")
-    coins_dict = load_crypto_collection()
+    print("Fetching list of crypto...")
+    crypto_collection = load_crypto_collection()
     print("Searching Reddit for crypto mentions")
-    search_reddit(coins_dict)
-    coin_and_counts = set([v for v in coins_dict.values() if v.count > 0 or (v.market_cap and int(v.market_cap) > 0)]) 
-    if args.print:
-        print("Done:\n")
-        print_sample_output(coin_and_counts)
-    if args.writedb:
-        print("Storing to DB...\n")
-        d = {se.symbol:se for se in coin_and_counts}
-        store_to_db(d)
+    if not DAILY_DATE_RANGE:
+        reddit_latest_daily(crypto_collection)
+    else:
+        reddit_range_dailies(crypto_collection)

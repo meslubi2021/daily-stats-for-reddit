@@ -3,6 +3,7 @@ import configparser
 import json
 import re
 import os
+from datetime import timedelta
 from time import sleep
 from random import choice, uniform
 
@@ -18,7 +19,6 @@ with open("res/common_words.json", "r") as common_words:
 
 with open("res/additional_coins.json", "r") as other_coins:
     additional_coins = (json.load(other_coins))
-
 
 USER_AGENTS = [
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Safari/537.36',
@@ -123,6 +123,16 @@ def get_env(ENV):
     except KeyError:
         return ""
 
+def generate_daily_title_format(date):
+    return "Daily Discussion - " + str(date.strftime("%B")) + " " + str(date.day) + ", " + date.strftime("%Y") + " (GMT+0)"
+
+def get_dates_in_range(date_start, date_end):
+    date_range = [date_start]
+    while(date_start < date_end):
+        date_start += timedelta(days=1)
+        date_range.append(date_start)
+    return date_range
+
 def get_additional_coins():
     ret = []    
     
@@ -164,11 +174,8 @@ def get_additional_coins():
         coin["atl"] = coin["market_data"]["atl"]["usd"]
         coin["atl_change_percentage"] = coin["market_data"]["atl_change_percentage"]["usd"]
         coin["atl_date"] = coin["market_data"]["atl_date"]["usd"]
-
         ret.append(coin)
-    
     return ret
-
 
 def blacklisted(w):
     return w in BLACKLIST
