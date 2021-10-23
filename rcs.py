@@ -99,7 +99,8 @@ def scan_and_add(coins_dict, comment):
             if word in coins_dict:
                 coins_dict[word].increment()
                 my_comment = Comment(comment.author.name, comment.created_utc, comment.ups, 
-                                     comment.downs, comment.total_awards_received)
+                                     comment.downs, comment.total_awards_received, comment.body, 
+                                     comment.depth, comment.permalink)
                 coins_dict[word].comments.append(my_comment.__dict__)
 
 def search_reddit(coins_dict):
@@ -153,7 +154,7 @@ def store_to_db(coins_dict):
 def print_sample_output(coin_and_counts):
     output = ""
     for count, coin in enumerate(sorted(coin_and_counts, key = lambda x: x.count, reverse = True)):
-        s_out = coin.name + "(" + coin.symbol + "): " + str(coin.count)
+        s_out = coin.name.capitalize() + " (" + coin.symbol + "): " + str(coin.count)
         print(s_out)
         output += "\n" + s_out
         if count > 100:
@@ -166,7 +167,7 @@ if __name__ == "__main__":
     coins_dict = load_crypto_collection()
     print("Searching Reddit for crypto mentions")
     search_reddit(coins_dict)
-    coin_and_counts = set([v for v in coins_dict.values() if v.count > 0])
+    coin_and_counts = set([v for v in coins_dict.values() if v.count > 0 or (v.market_cap and int(v.market_cap) > 0)]) 
     if args.print:
         print("Done:\n")
         print_sample_output(coin_and_counts)
@@ -174,5 +175,3 @@ if __name__ == "__main__":
         print("Storing to DB...\n")
         d = {se.symbol:se for se in coin_and_counts}
         store_to_db(d)
-
-

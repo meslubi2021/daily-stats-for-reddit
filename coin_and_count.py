@@ -40,9 +40,13 @@ class CoinAndCount:
 
 
 class Comment:
-    def __init__(self, author_name=None, timestamp=None, ups=None, downs=None, total_awards_received=None):
+    def __init__(self, author_name=None, timestamp=None, ups=None, downs=None, total_awards_received=None,
+                 body=None, depth=0, permalink=None):
         self.timestamp = timestamp
         self.ups = ups
         self.downs = downs
         self.total_awards_received = total_awards_received
         self.author_name = author_name
+        self.body = body
+        self.depth = depth
+        self.permalink = permalink
