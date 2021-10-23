@@ -34,7 +34,7 @@ password = utils.get_env("PASSWORD") or config.get('DB', 'PASSWORD')
 PASSWORD = urllib.parse.quote_plus(password)
 DB_HOST = utils.get_env("DB_HOST") or config.get('DB', 'DB_HOST')
 DB_NAME = utils.get_env("DB_NAME") or config.get('DB', 'DB_NAME')
-DB_COLLECTION = config.get('DB', 'DB_COLLECTION')
+DB_COLLECTION = utils.get_env("DB_COLLECTION") or config.get('DB', 'DB_COLLECTION')
 USER_AGENT = config.get('GENERAL', 'USER_AGENT')
 COINS_LIST_URL = config.get('GENERAL', 'COINS_LIST_URL')
 MORE_COMMENTS_LIMIT = utils.get_env("MORE_COMMENTS_LIMIT") or config.get('GENERAL', 'MORE_COMMENTS_LIMIT', fallback=None)
@@ -128,7 +128,7 @@ def search_reddit(coins_dict):
                 
 def store_to_db(coins_dict):
     r = coins_dict
-    for k, v in r.items():   
+    for k, v in r.items():
         r[k] = v.__dict__
     try:
         coins_collection.insert_one(r)
