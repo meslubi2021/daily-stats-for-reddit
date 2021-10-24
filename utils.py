@@ -75,7 +75,7 @@ def get_all_by_market_cap_asc():
     all_coins = []
     while(True):
         with requests.Session() as s:
-            print("Fetching page: "+str(page))
+            print("Fetching page: " + str(page))
             params = {
                 "vs_currency": "usd",
                 "order": "market_cap_asc",
@@ -90,9 +90,14 @@ def get_all_by_market_cap_asc():
             if len(result) == 0:
                 break
             page += 1
-            highest_mc = result[len(result)-1]["market_cap"]
-            if highest_mc and highest_mc < MIN_MARKET_CAP:
+            smallest_mc = result[0]["market_cap"]
+            highest_mc = result[len(result) - 1]["market_cap"]
+            
+            if highest_mc != None and highest_mc < MIN_MARKET_CAP:
                 continue
+            elif smallest_mc < MIN_MARKET_CAP:
+                result = [c for c in result if c["market_cap"] >= MIN_MARKET_CAP]
+
             all_coins.extend(result)
     # coins added manually are placed in the end of the array in order to overwrite any colliding ones in load_crypto_collection()
     all_coins.extend(get_additional_coins())
@@ -107,7 +112,7 @@ def is_uncommon(w, body):
     # check capitalized words
     if not w:
         return False
-    body = re.sub("[^a-zA-Z\d\s:\.]", "", body)
+    body = re.sub("[^a-zA-Z\d\s:\.]", " ", body)
     b_split = re.split("\.\s*|\n", body)
     for sentence in b_split:
         for index, word in enumerate(sentence.strip().split(" ")):
@@ -200,5 +205,6 @@ BLACKLIST = [
     'PUMP',
     'ATH',
     'FOMO',
-    'CMC'
+    'CMC',
+    'Cryptocurrency'
 ]
