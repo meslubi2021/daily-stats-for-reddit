@@ -158,7 +158,7 @@ def get_additional_coins():
         if "name" in c:
             coin["name"] = c["name"]  
 
-        coin["image"] = coin["image"]["small"]
+        coin["image"] = coin["image"]["large"]
         coin["current_price"] = coin["market_data"]["current_price"]["usd"]
         coin["price_change_24h"] = coin["market_data"]["price_change_24h"]
         coin["price_change_percentage_24h"] = coin["market_data"]["price_change_percentage_24h"]
