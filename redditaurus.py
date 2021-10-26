@@ -17,7 +17,7 @@ USER_AGENT = config.get('GENERAL', 'USER_AGENT')
 SUBM_DATE_RANGE = utils.get_env("SUBM_DATE_RANGE") or config.get('GENERAL', 'SUBM_DATE_RANGE')
 MORE_COMMENTS_LIMIT = utils.get_env("MORE_COMMENTS_LIMIT") or config.get('GENERAL', 'MORE_COMMENTS_LIMIT', fallback=None)
 if MORE_COMMENTS_LIMIT: MORE_COMMENTS_LIMIT = int(MORE_COMMENTS_LIMIT)
-CONCURRENCY_LEVEL = 100
+CONCURRENCY_LEVEL = 10
 
 class Redditaurus:
     def __init__(self):
@@ -85,18 +85,20 @@ class Redditaurus:
             coins_dict
         ) -> None:
         
-        try:
-            sub = await self.a_reddit.submission(s.id)
-            if not '_dataset_timestamp' in coins_dict:
-                coins_dict['_dataset_timestamp'] = str(sub.created_utc)
-            if not '_dataset_num_comments' in coins_dict:
-                coins_dict['_dataset_num_comments'] = sub.num_comments
-            else:
-                coins_dict['_dataset_num_comments'] += sub.num_comments
-            print("Found: " + sub.title)
-            await self.async_grab_submission_comments(coins_dict, sub)
-        except:
-            print("Sub fetching errored")
+        retry_cnt = 10
+
+        while(retry_cnt > 0):
+            try:
+                sub = await self.a_reddit.submission(s.id)
+                retry_cnt = 0
+                utils.add_dataset_details(coins_dict, sub)
+                print("Found: " + sub.title)
+                await self.async_grab_submission_comments(coins_dict, sub)
+            except Exception as er:
+                retry_cnt -= 1
+                print("Sub fetching errored: " + str(er))
+                if retry_cnt > 0:
+                    print("Retrying " + str(retry_cnt) + " more times.")
         
     def aggregate_submission_data(
             self, 
