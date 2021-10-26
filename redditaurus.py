@@ -85,7 +85,10 @@ class Redditaurus:
             coins_dict
         ) -> None:
         
-        sub = await self.a_reddit.submission(s.id)
+        try:
+            sub = await self.a_reddit.submission(s.id)
+        except:
+            print("Sub fetching errored")
         if not '_dataset_timestamp' in coins_dict:
             coins_dict['_dataset_timestamp'] = str(sub.created_utc)
         if not '_dataset_num_comments' in coins_dict:
