@@ -1,5 +1,6 @@
 import utils
 import db
+import asyncio
 import config_reader as config
 import crypto_lizard as coins_api
 from argparse import ArgumentParser
@@ -45,10 +46,13 @@ def process_data(data):
         db.store(data)
 
 if __name__ == "__main__":
-    print("Fetching list of crypto...")
+    #print("Fetching list of crypto...")
     crypto_collection = coins_api.load_crypto_collection()
-    print("Searching Reddit for crypto mentions")
-    if not DAILY_DATE_RANGE:
-        reddit.latest_daily(crypto_collection, process_data)
-    else:
-        reddit.range_dailies(crypto_collection, process_data)
+    #print("Searching Reddit for crypto mentions")
+    #if not DAILY_DATE_RANGE:
+    #    reddit.latest_daily(crypto_collection, process_data)
+    #else:
+    #    reddit.range_dailies(crypto_collection, process_data)
+    rt = reddit.Redditaurus()
+    urls = rt.get_submissions_urls()
+    asyncio.run(rt.process_submissions(urls, crypto_collection, process_data))

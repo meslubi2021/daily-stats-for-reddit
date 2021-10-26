@@ -93,10 +93,11 @@ def get_all_by_market_cap_asc():
             smallest_mc = result[0]["market_cap"]
             highest_mc = result[len(result) - 1]["market_cap"]
             
-            if highest_mc != None and highest_mc < MIN_MARKET_CAP:
+
+            if highest_mc == None or highest_mc < MIN_MARKET_CAP:
                 continue
-            elif smallest_mc < MIN_MARKET_CAP:
-                result = [c for c in result if c["market_cap"] >= MIN_MARKET_CAP]
+            elif smallest_mc == None or smallest_mc < MIN_MARKET_CAP:
+                result = [c for c in result if c["market_cap"] != None and c["market_cap"] >= MIN_MARKET_CAP]
 
             all_coins.extend(result)
     # coins added manually are placed in the end of the array in order to overwrite any colliding ones in load_crypto_collection()

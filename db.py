@@ -21,7 +21,7 @@ coins_collection = db[DB_COLLECTION]
 def store(coins_dict):
     r = coins_dict
     for k, v in r.items():
-        if not isinstance(v, str):
+        if not isinstance(v, str) and not isinstance(v, int):
             r[k] = v.__dict__
     try:
         coins_collection.insert_one(r)
