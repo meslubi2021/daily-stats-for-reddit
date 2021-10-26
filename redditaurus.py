@@ -87,17 +87,17 @@ class Redditaurus:
         
         try:
             sub = await self.a_reddit.submission(s.id)
+            if not '_dataset_timestamp' in coins_dict:
+                coins_dict['_dataset_timestamp'] = str(sub.created_utc)
+            if not '_dataset_num_comments' in coins_dict:
+                coins_dict['_dataset_num_comments'] = sub.num_comments
+            else:
+                coins_dict['_dataset_num_comments'] += sub.num_comments
+            print("Found: " + sub.title)
+            await self.async_grab_submission_comments(coins_dict, sub)
         except:
             print("Sub fetching errored")
-        if not '_dataset_timestamp' in coins_dict:
-            coins_dict['_dataset_timestamp'] = str(sub.created_utc)
-        if not '_dataset_num_comments' in coins_dict:
-            coins_dict['_dataset_num_comments'] = sub.num_comments
-        else:
-            coins_dict['_dataset_num_comments'] += sub.num_comments
-        print("Found: " + sub.title)
-        await self.async_grab_submission_comments(coins_dict, sub)
-
+        
     def aggregate_submission_data(
             self, 
             data, 
