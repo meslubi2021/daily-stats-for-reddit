@@ -2,6 +2,7 @@ print("importo la merda")
 from psaw import PushshiftAPI
 import praw
 import utils 
+from datetime import datetime, time
 import config_reader as config 
 
 print("fetching subs")
@@ -24,13 +25,15 @@ print("user agent "+ USER_AGENT)
 print("creating api")
 psAPI = PushshiftAPI(reddit)
 
+today = datetime.today()
+date_start = datetime.combine(today, time.min) 
+date_end = datetime.combine(today, time.max)
 
-subs = psAPI.search_submissions(after=1633821330,
-                            before=1633824930,
+subs = list(psAPI.search_submissions(after=date_start,
+                            before=date_end,
                             subreddit="CryptoCurrency",
-                            filter=['url', 'id'])
+                            filter=['url', 'id']))
 
-subs = list(subs)
 print("fetched "+str(len(subs))+" submissions")
 for sub in subs:
     print("sub: "+sub.id)
