@@ -46,13 +46,9 @@ def process_data(data):
         db.store(data)
 
 if __name__ == "__main__":
-    #print("Fetching list of crypto...")
     crypto_collection = coins_api.load_crypto_collection()
-    #print("Searching Reddit for crypto mentions")
-    #if not DAILY_DATE_RANGE:
-    #    reddit.latest_daily(crypto_collection, process_data)
-    #else:
-    #    reddit.range_dailies(crypto_collection, process_data)
     rt = reddit.Redditaurus()
+    print("Fetching submission urls...")
     urls = rt.get_submissions_urls()
+    print("Fetching everything from subs...")
     asyncio.run(rt.process_submissions(urls, crypto_collection, process_data))

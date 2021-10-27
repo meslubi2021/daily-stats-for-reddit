@@ -42,3 +42,11 @@ def store(coins_dict):
         coins_collection.insert_one(n)
     finally:
         print("Done.")
+
+def add_dataset_details(coins_dict, sub):
+    if not '_dataset_timestamp' in coins_dict:
+        coins_dict['_dataset_timestamp'] = str(sub.created_utc)
+    if not '_dataset_num_comments' in coins_dict:
+        coins_dict['_dataset_num_comments'] = sub.num_comments
+    else:
+        coins_dict['_dataset_num_comments'] += sub.num_comments

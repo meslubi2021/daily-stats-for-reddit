@@ -87,13 +87,19 @@ def get_all_by_market_cap_asc():
                 'User-Agent': ua
             }
             result = json.loads(s.get(MARKET_CAP_API_URL, params=params, headers=headers).text)
+            # we want it sorted by mc so colliding keys will naturally overwrite lower mc coins
+            result = sorted(result, key = lambda x: x["market_cap"] if "market_cap" in x and x["market_cap"] != None else 0)
             if len(result) == 0:
                 break
             page += 1
-            smallest_mc = result[0]["market_cap"]
-            highest_mc = result[len(result) - 1]["market_cap"]
             
+            smallest_mc = result[0]["market_cap"]
+            highest_mc = result[len(result) - 1]["market_cap"]  
 
+            for c in result: 
+                if c["symbol"] == "btc": 
+                    print("cazzo")
+            
             if highest_mc == None or highest_mc < MIN_MARKET_CAP:
                 continue
             elif smallest_mc == None or smallest_mc < MIN_MARKET_CAP:
@@ -185,14 +191,6 @@ def get_additional_coins():
 
 def blacklisted(w):
     return w in BLACKLIST
-
-def add_dataset_details(coins_dict, sub):
-    if not '_dataset_timestamp' in coins_dict:
-        coins_dict['_dataset_timestamp'] = str(sub.created_utc)
-    if not '_dataset_num_comments' in coins_dict:
-        coins_dict['_dataset_num_comments'] = sub.num_comments
-    else:
-        coins_dict['_dataset_num_comments'] += sub.num_comments
 
 BLACKLIST = [
     'NFT',

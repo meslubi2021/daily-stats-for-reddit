@@ -7,24 +7,35 @@ from coin_and_count import CoinAndCount
 CACHE_CRYPTO_DICT = utils.get_env("CACHE_CRYPTO_DICT") or bool(util.strtobool(config.get('GENERAL', 'CACHE_CRYPTO_DICT')))
 CRYPTO_DICT_NAME = "res/crypto_list.npy"
 
+def load_local_crypto_list() -> dict:
+    coins_dict = {}
+    try:
+        coins_dict = np.load(CRYPTO_DICT_NAME,allow_pickle='TRUE').item()
+        if coins_dict:
+            return coins_dict
+    except FileNotFoundError as fe:
+        print(fe)
+        print("File not found.")
+    return coins_dict
+
 # downloads the crypto list and loads it in a dictionary with the appropriate keys to scan
 # the comments.
-def load_crypto_collection():
+def load_crypto_collection() -> dict:
     coins_dict = {}
     # attempt to fetch the cached crypto dict, if configured and if available:
     if CACHE_CRYPTO_DICT:
-        try:
-            coins_dict = np.load(CRYPTO_DICT_NAME,allow_pickle='TRUE').item()
-            if coins_dict:
-                return coins_dict
-        except FileNotFoundError:
-            pass
+        return load_local_crypto_list()
 
     # coins are fetched already sorted by market cap ascending so that the last that are added 
     # to the dictionary overwrite automatically any duplicate name or symbol keys of
     # less popular coins. This way when a certain "duplicate" name or symbol is mentioned,
     # we will count it as the most popular (more likely to be mentioned) coin.
-    coins = utils.get_all_by_market_cap_asc()
+    try:
+        coins = utils.get_all_by_market_cap_asc()
+    except Exception as e:
+        print(e)
+        print("Failed to fetch coins from API, falling back to latest cached file.")
+        return load_local_crypto_list()
 
     # Using a dict object to provide a duplicate key to update the values stored in the coin_and_counts
     # set. This way we can increment a single counter whenever either the coin symbol OR the name are 

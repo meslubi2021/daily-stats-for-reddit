@@ -4,6 +4,7 @@ import re
 import asyncpraw
 import aiohttp
 import asyncio
+import db
 import time as t
 from coin_and_count import CoinAndCount, Comment
 from datetime import datetime, timezone, time
@@ -17,7 +18,9 @@ USER_AGENT = config.get('GENERAL', 'USER_AGENT')
 SUBM_DATE_RANGE = utils.get_env("SUBM_DATE_RANGE") or config.get('GENERAL', 'SUBM_DATE_RANGE')
 MORE_COMMENTS_LIMIT = utils.get_env("MORE_COMMENTS_LIMIT") or config.get('GENERAL', 'MORE_COMMENTS_LIMIT', fallback=None)
 if MORE_COMMENTS_LIMIT: MORE_COMMENTS_LIMIT = int(MORE_COMMENTS_LIMIT)
+
 CONCURRENCY_LEVEL = 10
+MAX_RETRY_SUB_FETCH = 25
 
 class Redditaurus:
     def __init__(self):
@@ -85,13 +88,13 @@ class Redditaurus:
             coins_dict
         ) -> None:
         
-        retry_cnt = 10
+        retry_cnt = MAX_RETRY_SUB_FETCH
 
         while(retry_cnt > 0):
             try:
                 sub = await self.a_reddit.submission(s.id)
                 retry_cnt = 0
-                utils.add_dataset_details(coins_dict, sub)
+                db.add_dataset_details(coins_dict, sub)
                 print("Found: " + sub.title)
                 await self.async_grab_submission_comments(coins_dict, sub)
             except Exception as er:
