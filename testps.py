@@ -2,7 +2,7 @@ print("importo la merda")
 from psaw import PushshiftAPI
 import praw
 import utils 
-from datetime import datetime, time
+from datetime import datetime, time, timezone
 import config_reader as config 
 
 print("fetching subs")
@@ -28,6 +28,8 @@ psAPI = PushshiftAPI(reddit)
 today = datetime.today()
 date_start = datetime.combine(today, time.min) 
 date_end = datetime.combine(today, time.max)
+date_start = int(date_start.replace(tzinfo=timezone.utc).timestamp())
+date_end = int(date_end.replace(tzinfo=timezone.utc).timestamp())
 
 subs = list(psAPI.search_submissions(after=date_start,
                             before=date_end,
