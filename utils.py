@@ -95,10 +95,6 @@ def get_all_by_market_cap_asc():
             
             smallest_mc = result[0]["market_cap"]
             highest_mc = result[len(result) - 1]["market_cap"]  
-
-            for c in result: 
-                if c["symbol"] == "btc": 
-                    print("cazzo")
             
             if highest_mc == None or highest_mc < MIN_MARKET_CAP:
                 continue

@@ -42,15 +42,17 @@ class Redditaurus:
         if SUBM_DATE_RANGE:
             date_range = [datetime.strptime(d, "%d/%m/%Y").date() for d in SUBM_DATE_RANGE.split("-")]
             date_start, date_end = date_range[0], date_range[len(date_range) - 1]
-            date_start = int(datetime.combine(date_start, time.min)
-                            .replace(tzinfo=timezone.utc).timestamp()) #1633821330
-            date_end = int(datetime.combine(date_end, time.max)
-                            .replace(tzinfo=timezone.utc).timestamp()) #1633824930
-
-        return list(self.psAPI.search_submissions(after=date_start,
+            date_start = datetime.combine(date_start, time.min) #1633821330
+            date_end = datetime.combine(date_end, time.max) #1633824930
+        date_start = int(date_start.replace(tzinfo=timezone.utc).timestamp())
+        date_end = int(date_end.replace(tzinfo=timezone.utc).timestamp())
+        
+        submissions = list(self.psAPI.search_submissions(after=date_start,
                             before=date_end,
                             subreddit=SUBREDDIT,
                             filter=['url', 'id']))
+                                     
+        return submissions
     
     async def process_submissions(
             self, 
