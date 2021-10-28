@@ -3,7 +3,7 @@ import configparser
 import json
 import re
 import os
-from datetime import timedelta
+from datetime import timedelta, datetime, time
 from time import sleep
 from random import choice, uniform
 
@@ -105,6 +105,18 @@ def get_all_by_market_cap_asc():
     # coins added manually are placed in the end of the array in order to overwrite any colliding ones in load_crypto_collection()
     all_coins.extend(get_additional_coins())
     return all_coins
+
+def get_date_range(range_string):
+    if range_string == None:
+        return [datetime.today()]
+    range = []
+    range_string = range_string.strip()
+    date_range = [datetime.strptime(d, "%d/%m/%Y").date() for d in range_string.split("-")]
+    date_start, date_end = date_range[0], date_range[len(date_range) - 1]
+    while(date_start <= date_end):
+        range.append(date_start)
+        date_start = date_start + timedelta(days=1)
+    return range
 
 def mongescape(w):
     return w.replace("$", "[S]")

@@ -15,7 +15,6 @@ CLIENT_ID = utils.get_env('CLIENT_ID') or config.get('PRAW', 'CLIENT_ID')
 CLIENT_SECRET = utils.get_env("CLIENT_SECRET") or config.get('PRAW', 'CLIENT_SECRET')
 SUBREDDIT = config.get('REDDIT', 'SUBREDDIT')
 USER_AGENT = config.get('GENERAL', 'USER_AGENT')
-SUBM_DATE_RANGE = utils.get_env("SUBM_DATE_RANGE") or config.get('GENERAL', 'SUBM_DATE_RANGE')
 MORE_COMMENTS_LIMIT = utils.get_env("MORE_COMMENTS_LIMIT") or config.get('GENERAL', 'MORE_COMMENTS_LIMIT', fallback=None)
 if MORE_COMMENTS_LIMIT: MORE_COMMENTS_LIMIT = int(MORE_COMMENTS_LIMIT)
 
@@ -34,19 +33,10 @@ class Redditaurus:
         # psaw
         self.psAPI = PushshiftAPI(self.reddit)
     
-    def get_submissions_urls(self) -> None:
+    def get_submissions_urls(self, date) -> None:
+        date_start = int(datetime.combine(date, time.min).replace(tzinfo=timezone.utc).timestamp())
+        date_end = int(datetime.combine(date, time.max) .replace(tzinfo=timezone.utc).timestamp())
 
-        today = datetime.today()
-        date_start = datetime.combine(today, time.min) 
-        date_end = datetime.combine(today, time.max)  
-        if SUBM_DATE_RANGE:
-            date_range = [datetime.strptime(d, "%d/%m/%Y").date() for d in SUBM_DATE_RANGE.split("-")]
-            date_start, date_end = date_range[0], date_range[len(date_range) - 1]
-            date_start = datetime.combine(date_start, time.min) #1633821330
-            date_end = datetime.combine(date_end, time.max) #1633824930
-        date_start = int(date_start.replace(tzinfo=timezone.utc).timestamp())
-        date_end = int(date_end.replace(tzinfo=timezone.utc).timestamp())
-        
         submissions = list(self.psAPI.search_submissions(after=date_start,
                             before=date_end,
                             subreddit=SUBREDDIT,

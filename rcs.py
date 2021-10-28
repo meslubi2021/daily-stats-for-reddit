@@ -22,7 +22,9 @@ parser = ArgumentParser()
 parser.add_argument("-w", "--write", dest="writedb", action='store_true',
                     help="write to DB.")
 parser.add_argument("-p", "--print", dest="print", action='store_true',
-                    help="print result to console.")                  
+                    help="print result to console.") 
+parser.add_argument("-r", "--range", dest="range", action='store',
+                    help="date range in the format dd/mm/yyyy[-dd/mm/yyyy].")                 
 args = parser.parse_args()
 
 def print_sample_output(coin_and_counts):
@@ -48,7 +50,9 @@ def process_data(data):
 if __name__ == "__main__":
     crypto_collection = coins_api.load_crypto_collection()
     rt = reddit.Redditaurus()
-    print("Fetching submission urls...")
-    urls = rt.get_submissions_urls()
-    print("Fetching everything from subs...")
-    asyncio.run(rt.process_submissions(urls, crypto_collection, process_data))
+    dates = utils.get_date_range(args.range)
+    for date in dates:
+        print("Fetching submission urls...")
+        urls = rt.get_submissions_urls(date)
+        print("Fetching everything from subs...")
+        asyncio.run(rt.process_submissions(urls, crypto_collection, process_data))
