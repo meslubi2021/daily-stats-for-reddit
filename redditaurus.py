@@ -5,6 +5,7 @@ import asyncpraw
 import aiohttp
 import asyncio
 import db
+import logging
 import time as t
 from coin_and_count import CoinAndCount, Comment
 from datetime import datetime, timezone, time
@@ -16,10 +17,14 @@ CLIENT_SECRET = utils.get_env("CLIENT_SECRET") or config.get('PRAW', 'CLIENT_SEC
 SUBREDDIT = config.get('REDDIT', 'SUBREDDIT')
 USER_AGENT = config.get('GENERAL', 'USER_AGENT')
 MORE_COMMENTS_LIMIT = utils.get_env("MORE_COMMENTS_LIMIT") or config.get('GENERAL', 'MORE_COMMENTS_LIMIT', fallback=None)
+LOG_LEVEL = utils.get_env("LOG_LEVEL") or config.get('GENERAL', 'LOG_LEVEL', fallback=None)
 if MORE_COMMENTS_LIMIT: MORE_COMMENTS_LIMIT = int(MORE_COMMENTS_LIMIT)
 
 CONCURRENCY_LEVEL = 10
-MAX_RETRY_SUB_FETCH = 25
+MAX_RETRY_SUB_FETCH = 50
+
+logger = logging.getLogger(__name__)
+logger.setLevel(LOG_LEVEL)
 
 class Redditaurus:
     def __init__(self):
@@ -59,41 +64,44 @@ class Redditaurus:
                 'session': aiohttp.ClientSession(connector=aiohttp.TCPConnector(limit=CONCURRENCY_LEVEL))
             }
         )
-        print("Processing " + str(len(submissions_urls)) + " submissions.")
+        logger.info("Processing " + str(len(submissions_urls)) + " submissions.")
 
-        async with self.a_reddit:
+        async with self.a_reddit as r:
             jobs = set()
             for url in submissions_urls:
                 jobs.add(
                     asyncio.create_task(
-                        self.process_single_submission_from_url(url, coins_dict)
+                        self.process_submission_from_url(url, coins_dict, r)
                     )
                 )
             await asyncio.gather(*jobs)
-        #for url in submissions_urls:
-        #    await self.process_single_submission_from_url(url, coins_dict)
         self.aggregate_submission_data(coins_dict, cb)
 
-    async def process_single_submission_from_url(
+    async def process_submission_from_url(
             self, 
             s, 
-            coins_dict
+            coins_dict,
+            reddit
         ) -> None:
         
         retry_cnt = MAX_RETRY_SUB_FETCH
 
         while(retry_cnt > 0):
             try:
-                sub = await self.a_reddit.submission(s.id)
-                retry_cnt = 0
-                db.add_dataset_details(coins_dict, sub)
-                print("Found: " + sub.title)
-                await self.async_grab_submission_comments(coins_dict, sub)
+                sub = await reddit.submission(s.id)
+                break
             except Exception as er:
                 retry_cnt -= 1
-                print("Sub fetching errored: " + str(er))
+                logger.debug("Sub fetching errored: " + str(er))
                 if retry_cnt > 0:
-                    print("Retrying " + str(retry_cnt) + " more times.")
+                    logger.info("Retrying " + str(retry_cnt) + " more times.")
+                else:
+                    logger.error("Failed too many times fetching sub: giving up. Err: " + str(er))
+                t.sleep(0.5)
+        db.add_dataset_details(coins_dict, sub)
+        logger.debug("Found: " + sub.title)
+        await self.async_grab_submission_comments(coins_dict, sub)
+        logger.debug("Done processing submission: Dict has " + str(utils.total_count(coins_dict)) + " total counts.")
         
     def aggregate_submission_data(
             self, 
@@ -114,18 +122,21 @@ class Redditaurus:
         ) -> dict:
 
         # traversing all comments with BFS
-        print("Scanning comments, this may take a while...")
+        logger.debug("Scanning comments using limit: " + str(MORE_COMMENTS_LIMIT) + ", this may take a while...")
         start_fetch = t.time()
         comments = await submission.comments()
         await comments.replace_more(limit=MORE_COMMENTS_LIMIT)
         flattened_list = await comments.list()
         time_elapsed_fetch = t.time() - start_fetch
-        print("Fetched " + str(len(flattened_list)) + 
+        logger.debug("Fetched " + str(len(flattened_list)) + 
               " comments in " + str(time_elapsed_fetch) + 
               " seconds.\nParsing comments content...")
+        if "Daily Discussion" in submission.title:
+            logger.info("Daily Discussion has " + str(len(flattened_list)) + 
+              " comments.")
         for comment in flattened_list:
             self.scan_and_add(coins_dict, comment)
-        print("Parsing completed.")
+        logger.debug("Parsing completed.")
         return coins_dict
     
     def scan_and_add(
@@ -138,8 +149,9 @@ class Redditaurus:
             for word in re.split('\W+', comment.body):
                 # filter out common words
                 if not utils.is_uncommon(word, comment.body): continue 
-                # apply blacklist
+                # apply blacklists
                 if utils.blacklisted(word): continue 
+                if comment.author == None or utils.user_blacklisted(comment.author.name): continue
                 word = utils.mongescape(word)
                 # lower words that are not completely upper
                 if not word.isupper(): word = word.lower() 

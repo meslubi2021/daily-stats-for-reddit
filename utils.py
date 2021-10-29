@@ -3,9 +3,12 @@ import configparser
 import json
 import re
 import os
+import logging
 from datetime import timedelta, datetime, time
 from time import sleep
 from random import choice, uniform
+
+from coin_and_count import CoinAndCount
 
 config = configparser.ConfigParser(allow_no_value=True)
 config_file = "config.ini"
@@ -43,6 +46,14 @@ USER_AGENTS = [
 MARKET_CAP_API_URL = config.get('GENERAL','MARKET_CAP_URL')
 SINGLE_COIN_API_URL = config.get('GENERAL','SINGLE_COIN_API_URL')
 MIN_MARKET_CAP = int(config.get('GENERAL','MIN_MARKET_CAP'))
+
+LOG_LEVEL = {
+    "CRITICAL" : logging.CRITICAL,
+    "ERROR" : logging.ERROR,
+    "WARNING" : logging.WARNING,
+    "INFO" : logging.INFO,
+    "DEBUG" : logging.DEBUG
+    }
 
 def rand_sleep(start, end):
     sleep(uniform(start, end))
@@ -197,8 +208,26 @@ def get_additional_coins():
         ret.append(coin)
     return ret
 
+def total_count(coins_dict):
+    counter = 0
+    for v in coins_dict.values():
+        if isinstance(v, CoinAndCount):
+            counter += v.count
+    return counter
+
 def blacklisted(w):
     return w in BLACKLIST
+
+def user_blacklisted(u):
+    for bl in USERS_BLACKLIST:
+        if u.lower().startswith(bl.lower()) or u.lower().endswith(bl.lower()):
+            return True
+    return False
+
+USERS_BLACKLIST = [
+    "bot",
+    "automoderator"
+]
 
 BLACKLIST = [
     'NFT',

@@ -1,6 +1,8 @@
 import utils
 import db
 import asyncio
+import logging
+import copy
 import config_reader as config
 import crypto_lizard as coins_api
 from argparse import ArgumentParser
@@ -16,6 +18,11 @@ from coin_and_count import CoinAndCount
 
 COINS_LIST_URL = config.get('GENERAL', 'COINS_LIST_URL')
 DAILY_DATE_RANGE = utils.get_env("DAILY_DATE_RANGE") or config.get('GENERAL', 'DAILY_DATE_RANGE')
+LOG_LEVEL = utils.get_env("LOG_LEVEL") or config.get('GENERAL', 'LOG_LEVEL', fallback=None)
+
+logger = logging.getLogger(__name__)
+logger.setLevel(utils.LOG_LEVEL[LOG_LEVEL])
+logging.basicConfig(level=utils.LOG_LEVEL["INFO"])
 
 # arg parsing
 parser = ArgumentParser()
@@ -41,10 +48,10 @@ def print_sample_output(coin_and_counts):
 
 def process_data(data):
     if args.print:
-        print("Done:\n")
+        logger.info("Done:\n")
         print_sample_output(data)
     if args.writedb:
-        print("Storing to DB...\n")
+        logger.info("Storing to DB...\n")
         db.store(data)
 
 if __name__ == "__main__":
@@ -52,7 +59,8 @@ if __name__ == "__main__":
     rt = reddit.Redditaurus()
     dates = utils.get_date_range(args.range)
     for date in dates:
-        print("Fetching submission urls...")
+        crypto_collection_copy = copy.deepcopy(crypto_collection)
+        logger.info("Fetching submission urls...")
         urls = rt.get_submissions_urls(date)
-        print("Fetching everything from subs...")
-        asyncio.run(rt.process_submissions(urls, crypto_collection, process_data))
+        logger.info("Fetching everything from subs...")
+        asyncio.run(rt.process_submissions(urls, crypto_collection_copy, process_data))
