@@ -22,7 +22,7 @@ LOG_LEVEL = utils.get_env("LOG_LEVEL") or config.get('GENERAL', 'LOG_LEVEL', fal
 
 logger = logging.getLogger(__name__)
 logger.setLevel(utils.LOG_LEVEL[LOG_LEVEL])
-logging.basicConfig(level=utils.LOG_LEVEL["INFO"])
+logging.basicConfig(level=utils.LOG_LEVEL[LOG_LEVEL])
 
 # arg parsing
 parser = ArgumentParser()
