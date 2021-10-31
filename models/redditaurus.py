@@ -5,11 +5,10 @@ import re
 import asyncpraw
 import aiohttp
 import asyncio
-import db
 import logging
 import tasker
 import time as t
-from coin_and_count import CoinAndCount, Comment
+from models.coin_and_count import Comment
 from datetime import datetime, timezone, time
 import config_reader as config
 from psaw import PushshiftAPI
@@ -45,8 +44,8 @@ class Redditaurus:
         """ Get submission urls
         function to obtain a list of submission url / id objects for a given date
         """
-        date_start = int(datetime.combine(date, time.min).replace(tzinfo=timezone.utc).timestamp()) #1635465600
-        date_end = int(datetime.combine(date, time.max) .replace(tzinfo=timezone.utc).timestamp()) #1635469200
+        date_start = int(datetime.combine(date, time.min).replace(tzinfo=timezone.utc).timestamp()) #1635465626#
+        date_end = int(datetime.combine(date, time.max) .replace(tzinfo=timezone.utc).timestamp()) #1635467426#
 
         submissions = list(self.psAPI.search_submissions(after=date_start,
                             before=date_end,
@@ -59,6 +58,7 @@ class Redditaurus:
             self, 
             submissions_urls, 
             coins_dict, 
+            metadata,
             cb
         ) -> None:
 
@@ -78,32 +78,26 @@ class Redditaurus:
                 'session': aiohttp.ClientSession(timeout=300, connector=aiohttp.TCPConnector(limit=CONCURRENCY_LEVEL, limit_per_host=5))
             }
         )
-        logger.info("Processing " + str(len(submissions_urls)) + " submissions.")
-        self.processed_sub = 0
+        async with self.a_reddit:
+            logger.info("Processing " + str(len(submissions_urls)) + " submissions.")
+            self.processed_sub = 0
 
-        # the jobs array
-        jobs = [
-            self.process_submission_from_url(url, coins_dict)
-            for url 
-            in submissions_urls
-        ]
-        #for url in submissions_urls:
-        #    jobs.add(
-        #        asyncio.create_task(
-        #            self.process_submission_from_url(url, coins_dict)
-        #        )
-        #    )
+            # the jobs array
+            jobs = [
+                self.process_submission_from_url(url, coins_dict, metadata)
+                for url 
+                in submissions_urls
+            ]
 
-        # execute in a queue with defined concurrency. This prevents issues that
-        # occur when `reddit.submission` is called too many times concurrently
-        await tasker.gather_with_concurrency(*jobs)
-        # aggregate result
-        self.aggregate_submission_data(coins_dict, cb)
+            await tasker.gather_with_concurrency(*jobs)
+            # aggregate result
+            self.aggregate_submission_data(coins_dict, metadata, cb)
 
     async def process_submission_from_url(
             self, 
             s, 
-            coins_dict
+            coins_dict,
+            metadata
         ) -> None:
         """ Process submission from url
         processes a single submission from a given url (ID).
@@ -126,8 +120,9 @@ class Redditaurus:
                 else:
                     logger.error("Failed too many times fetching sub: giving up. Err: " + str(er))
                 
-        # Prepare the coins_dict structure with the sub details
-        db.add_dataset_details(coins_dict, sub)
+        # add sub details to metadata
+        metadata.add_num_comments(sub.num_comments)
+
         logger.debug("Found: " + sub.title)
         # Fetch and parse all submission comments
         await self.async_grab_submission_comments(coins_dict, sub)
@@ -138,17 +133,16 @@ class Redditaurus:
         
     def aggregate_submission_data(
             self, 
-            data, 
+            coin_data,
+            metadata, 
             callback
         ) -> None:
-        """Aggregate submission date
-        data is prepared to be returned via the callback
+        """Aggregate submission data
+        data is prepared to be returned (and stored) via the callback
         """
-        coin_and_counts = set([v for v in data.values() if isinstance(v, CoinAndCount) 
-                                and (v.count > 0 or (v.market_cap and int(v.market_cap) > 0))])
-        d = {se.symbol:se for se in sorted(coin_and_counts, key = lambda x: x.count, reverse = False)}
-        d.update({k:data[k] for k in data if not isinstance(data[k], CoinAndCount)})
-        callback(d)
+        coin_and_counts = set([v for v in coin_data.values() if (v.count > 0 or (v.market_cap and int(v.market_cap) > 0))])
+        cd = {se.symbol:se for se in sorted(coin_and_counts, key = lambda x: x.count, reverse = False)}
+        callback(cd, metadata)
 
     async def async_grab_submission_comments(
             self, 

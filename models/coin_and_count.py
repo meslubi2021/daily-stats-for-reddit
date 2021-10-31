@@ -1,12 +1,14 @@
 
 class CoinAndCount:
 
-    def __init__(self, name, symbol, coin=None, count = 0):
+    def __init__(self, name, symbol, coin=None, count = 0, dataset_timestamp = -1, dataset_id = None):
         self.symbol = symbol 
         self.name = name
         self.count = count
         self.comments = []
         self.id = coin['id']
+        self._dataset_timestamp = dataset_timestamp
+        self._dataset_id = dataset_id
 
         # non mandatory fields
         try:
@@ -34,7 +36,12 @@ class CoinAndCount:
         except KeyError:
             pass
         
-        
+    def set_timestamp(self, ts):
+        self._dataset_timestamp = ts
+    
+    def set_dataset_id(self, id):
+        self._dataset_id = id
+
     def increment(self):
         self.count += 1
 

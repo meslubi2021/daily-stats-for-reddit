@@ -1,6 +1,6 @@
 import unittest
-import crypto_lizard as coins_api
-import redditaurus as reddit
+import models.crypto_lizard as coins_api
+import models.redditaurus as reddit
 
 TEST_MESSAGES_VALID = [
     ('I like CHSB 😔', 'CHSB'),

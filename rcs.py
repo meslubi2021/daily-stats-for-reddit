@@ -3,11 +3,13 @@ import db
 import asyncio
 import logging
 import copy
+from datetime import datetime, time, timezone
+from models.ds_metadata import DatasetMetadata
+from models.crypto_lizard import CryptoLizard
 import config_reader as config
-import crypto_lizard as coins_api
 from argparse import ArgumentParser
-import redditaurus as reddit
-from coin_and_count import CoinAndCount
+import models.redditaurus as reddit
+from models.coin_and_count import CoinAndCount
 
 # Due to the high amount of cryptos that share names or symbol that are commonly used,
 # the script can't always return reliable results. The algorithms trade accuracy for 
@@ -46,21 +48,26 @@ def print_sample_output(coin_and_counts):
         with open("output.txt", "w") as text_file:
             text_file.write(output)
 
-def process_data(data):
+def process_data(coins_data, dataset_details):
     if args.print:
         logger.info("Done:\n")
-        print_sample_output(data)
+        print_sample_output(coins_data)
     if args.writedb:
         logger.info("Storing to DB...\n")
-        db.store(data)
+        db.store(coins_data, dataset_details)
 
 if __name__ == "__main__":
-    crypto_collection = coins_api.load_crypto_collection()
+    crypto_lizard = CryptoLizard()
+    crypto_lizard.load_crypto_collection()
     rt = reddit.Redditaurus()
     dates = utils.get_date_range(args.range)
     for date in dates:
-        crypto_collection_copy = copy.deepcopy(crypto_collection)
+        print("Fetching data for date: " + str(date))
+        metadata = DatasetMetadata(dataset_timestamp=int(datetime.combine(date, time.min).replace(tzinfo=timezone.utc).timestamp()))
+        crypto_lizard.reset_coins_dict()
+        crypto_lizard.timestamp_tag_crypto_collection(date)
+        crypto_lizard.dataset_id_tag_crypto_collection(metadata._dataset_id)
         logger.info("Fetching submission urls...")
         urls = rt.get_submissions_urls(date)
         logger.info("Fetching everything from subs...")
-        asyncio.run(rt.process_submissions(urls, crypto_collection_copy, process_data))
+        asyncio.run(rt.process_submissions(urls, crypto_lizard.get_coins_dict(), metadata, process_data))

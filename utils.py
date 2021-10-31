@@ -8,7 +8,7 @@ from datetime import timedelta, datetime, time
 from time import sleep
 from random import choice, uniform
 
-from coin_and_count import CoinAndCount
+from models.coin_and_count import CoinAndCount
 
 config = configparser.ConfigParser(allow_no_value=True)
 config_file = "config.ini"
