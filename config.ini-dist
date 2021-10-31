@@ -22,4 +22,5 @@ USER=xxxxxxxxxx
 PASSWORD=xxxxxxxxxx
 DB_HOST=xxxx.xxxx.xxxx.xxxx.xxxx/xxxxx
 DB_NAME=xxxxxxxxxx
-DB_COLLECTION=xxxx
+DB_METADATA_COLLECTION=xxxx
+DB_COINS_COLLECTION=xxxxxx

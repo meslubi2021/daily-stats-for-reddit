@@ -9,15 +9,15 @@ password = utils.get_env("DB_PASSWORD") or config.get('DB', 'PASSWORD')
 PASSWORD = urllib.parse.quote_plus(password)
 DB_HOST = utils.get_env("DB_HOST") or config.get('DB', 'DB_HOST')
 DB_NAME = utils.get_env("DB_NAME") or config.get('DB', 'DB_NAME')
-DB_COLLECTION = utils.get_env("DB_COLLECTION") or config.get('DB', 'DB_COLLECTION')
-
+DB_COINS_COLLECTION = utils.get_env("DB_COINS_COLLECTION") or config.get('DB', 'DB_COINS_COLLECTION')
+DB_METADATA_COLLECTION = utils.get_env("DB_METADATA_COLLECTION") or config.get('DB', 'DB_METADATA_COLLECTION')
 
 # database configuration
 URL = f"mongodb+srv://{USER}:{PASSWORD}@{DB_HOST}?retryWrites=true&w=majority"
 client = pymongo.MongoClient(URL, ssl_cert_reqs=ssl.CERT_NONE)
 db = client[DB_NAME]
-coll_coins = db["COINS_TESTING"]#DB_COLLECTION]
-coll_metadata = db["DATASET_METADATA"] #TODO
+coll_coins = db[DB_COINS_COLLECTION]
+coll_metadata = db[DB_METADATA_COLLECTION]
 
 def store(coins_dict, metadata):
     # update this dataset's metadata
