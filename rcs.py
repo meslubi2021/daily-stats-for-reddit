@@ -2,7 +2,6 @@ import utils
 import db
 import asyncio
 import logging
-import copy
 from datetime import datetime, time, timezone
 from models.ds_metadata import DatasetMetadata
 from models.crypto_lizard import CryptoLizard
@@ -48,13 +47,16 @@ def print_sample_output(coin_and_counts):
         with open("output.txt", "w") as text_file:
             text_file.write(output)
 
-def process_data(coins_data, dataset_details):
+async def process_data(crypto_lizard, dataset_metadata, date, processing_date):
+    data = crypto_lizard.shrink_and_sort()
+    if date.date() != processing_date.date():
+        data = await crypto_lizard.time_machine_shrunk_data(date)
     if args.print:
         logger.info("Done:\n")
-        print_sample_output(coins_data)
+        print_sample_output(data)
     if args.writedb:
         logger.info("Storing to DB...\n")
-        db.store(coins_data, dataset_details)
+        db.store(data, dataset_metadata)
 
 if __name__ == "__main__":
     crypto_lizard = CryptoLizard()
@@ -70,4 +72,4 @@ if __name__ == "__main__":
         logger.info("Fetching submission urls...")
         urls = rt.get_submissions_urls(date)
         logger.info("Fetching everything from subs...")
-        asyncio.run(rt.process_submissions(urls, crypto_lizard.get_coins_dict(), metadata, process_data))
+        asyncio.run(rt.process_submissions(urls, crypto_lizard, metadata, date, datetime.today(), process_data))

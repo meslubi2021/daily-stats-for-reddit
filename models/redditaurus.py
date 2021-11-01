@@ -9,7 +9,7 @@ import logging
 import tasker
 import time as t
 from models.coin_and_count import Comment
-from datetime import datetime, timezone, time
+from datetime import datetime, time, timezone
 import config_reader as config
 from psaw import PushshiftAPI
 
@@ -57,8 +57,10 @@ class Redditaurus:
     async def process_submissions(
             self, 
             submissions_urls, 
-            coins_dict, 
+            crypto_lizard, 
             metadata,
+            date,
+            processing_date,
             cb
         ) -> None:
 
@@ -78,20 +80,22 @@ class Redditaurus:
                 'session': aiohttp.ClientSession(timeout=300, connector=aiohttp.TCPConnector(limit=CONCURRENCY_LEVEL, limit_per_host=5))
             }
         )
+        start_process = t.time()
         async with self.a_reddit:
             logger.info("Processing " + str(len(submissions_urls)) + " submissions.")
             self.processed_sub = 0
 
             # the jobs array
             jobs = [
-                self.process_submission_from_url(url, coins_dict, metadata)
+                self.process_submission_from_url(url, crypto_lizard.get_coins_dict(), metadata)
                 for url 
                 in submissions_urls
             ]
 
             await tasker.gather_with_concurrency(*jobs)
-            # aggregate result
-            self.aggregate_submission_data(coins_dict, metadata, cb)
+            # return result
+            await cb(crypto_lizard, metadata, date, processing_date)
+            logger.info("Processed all " + str(len(submissions_urls)) + " submissions for date: " + str(date.date()) + " in " + str(int(t.time() - start_process)) + " seconds.")
 
     async def process_submission_from_url(
             self, 
@@ -122,27 +126,12 @@ class Redditaurus:
                 
         # add sub details to metadata
         metadata.add_num_comments(sub.num_comments)
-
         logger.debug("Found: " + sub.title)
         # Fetch and parse all submission comments
         await self.async_grab_submission_comments(coins_dict, sub)
         if logger.level == logging.DEBUG:
             logger.debug("Done processing submission: " + sub.title + " Dict has " + str(utils.total_count(coins_dict)) + " total counts.")
         self.processed_sub += 1
-        logger.info("Done processing sub " + str(self.processed_sub))
-        
-    def aggregate_submission_data(
-            self, 
-            coin_data,
-            metadata, 
-            callback
-        ) -> None:
-        """Aggregate submission data
-        data is prepared to be returned (and stored) via the callback
-        """
-        coin_and_counts = set([v for v in coin_data.values() if (v.count > 0 or (v.market_cap and int(v.market_cap) > 0))])
-        cd = {se.symbol:se for se in sorted(coin_and_counts, key = lambda x: x.count, reverse = False)}
-        callback(cd, metadata)
 
     async def async_grab_submission_comments(
             self, 

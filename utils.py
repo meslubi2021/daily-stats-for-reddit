@@ -43,10 +43,6 @@ USER_AGENTS = [
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.83 Safari/537.36'
 ]
 
-MARKET_CAP_API_URL = config.get('GENERAL','MARKET_CAP_URL')
-SINGLE_COIN_API_URL = config.get('GENERAL','SINGLE_COIN_API_URL')
-MIN_MARKET_CAP = int(config.get('GENERAL','MIN_MARKET_CAP'))
-
 LOG_LEVEL = {
     "CRITICAL" : logging.CRITICAL,
     "ERROR" : logging.ERROR,
@@ -61,68 +57,12 @@ def rand_sleep(start, end):
 def random_ua():
     return choice(USER_AGENTS)
 
-# unused
-def sort_by_market_cap(ids):
-    rand_sleep(0,2)
-    ids_str = ",".join(ids)
-    params = {
-        "vs_currency": "usd",
-        "ids": ids_str,
-        "order": "market_cap_desc",
-        "per_page": 100,
-        "page": 1,
-        "sparkline": "false"
-    }
-    headers = {
-        'User-Agent': random_ua()
-    }
-    result = json.loads(requests.get(MARKET_CAP_API_URL, params=params, headers=headers).text)
-    return [x['id'] for x in result]
-
-# get all coins sorted by ascending market cap
-def get_all_by_market_cap_asc():
-    page = 1
-    ua = random_ua()
-    all_coins = []
-    while(True):
-        with requests.Session() as s:
-            print("Fetching page: " + str(page))
-            params = {
-                "vs_currency": "usd",
-                "order": "market_cap_asc",
-                "per_page": 250,
-                "page": page,
-                "sparkline": "false"
-            }
-            headers = {
-                'User-Agent': ua
-            }
-            result = json.loads(s.get(MARKET_CAP_API_URL, params=params, headers=headers).text)
-            # we want it sorted by mc so colliding keys will naturally overwrite lower mc coins
-            result = sorted(result, key = lambda x: x["market_cap"] if "market_cap" in x and x["market_cap"] != None else 0)
-            if len(result) == 0:
-                break
-            page += 1
-            
-            smallest_mc = result[0]["market_cap"]
-            highest_mc = result[len(result) - 1]["market_cap"]  
-            
-            if highest_mc == None or highest_mc < MIN_MARKET_CAP:
-                continue
-            elif smallest_mc == None or smallest_mc < MIN_MARKET_CAP:
-                result = [c for c in result if c["market_cap"] != None and c["market_cap"] >= MIN_MARKET_CAP]
-
-            all_coins.extend(result)
-    # coins added manually are placed in the end of the array in order to overwrite any colliding ones in load_crypto_collection()
-    all_coins.extend(get_additional_coins())
-    return all_coins
-
 def get_date_range(range_string):
     if range_string == None:
         return [datetime.today()]
     range = []
     range_string = range_string.strip()
-    date_range = [datetime.strptime(d, "%d/%m/%Y").date() for d in range_string.split("-")]
+    date_range = [datetime.strptime(d, "%d/%m/%Y") for d in range_string.split("-")]
     date_start, date_end = date_range[0], date_range[len(date_range) - 1]
     while(date_start <= date_end):
         range.append(date_start)
@@ -163,50 +103,6 @@ def get_dates_in_range(date_start, date_end):
         date_start += timedelta(days=1)
         date_range.append(date_start)
     return date_range
-
-def get_additional_coins():
-    ret = []    
-    
-    for c in additional_coins:
-        ua = random_ua()
-        params = {
-            "tickers": "false",
-            "market_data": "true",
-            "community_data": "false",
-            "developer_data": "false",
-            "sparkline": "false"
-        }
-        headers = {
-            'User-Agent': ua
-        }
-        coin = json.loads(requests.get(SINGLE_COIN_API_URL + c["id"], params=params, headers=headers).text)
-        # overwrite name and market cap here to configure the fields as we like
-        if "name" in c:
-            coin["name"] = c["name"]  
-
-        coin["image"] = coin["image"]["large"]
-        coin["current_price"] = coin["market_data"]["current_price"]["usd"]
-        coin["price_change_24h"] = coin["market_data"]["price_change_24h"]
-        coin["price_change_percentage_24h"] = coin["market_data"]["price_change_percentage_24h"]
-        coin["market_cap_change_24h"] = coin["market_data"]["market_cap_change_24h"]
-        coin["market_cap_change_percentage_24h"] = coin["market_data"]["market_cap_change_percentage_24h"]
-        coin["circulating_supply"] = coin["market_data"]["circulating_supply"]
-        coin["total_supply"] = coin["market_data"]["total_supply"]
-        coin["max_supply"] = coin["market_data"]["max_supply"]
-        coin["roi"] = coin["market_data"]["roi"]
-        coin["market_cap_rank"] = coin["market_data"]["market_cap_rank"]
-        coin["market_cap"] = coin["market_data"]["market_cap"]["usd"]
-        coin["total_volume"] = coin["market_data"]["total_volume"]["usd"]
-        coin["high_24h"] = coin["market_data"]["high_24h"]["usd"]
-        coin["low_24h"] = coin["market_data"]["low_24h"]["usd"]
-        coin["ath"] = coin["market_data"]["ath"]["usd"]
-        coin["ath_change_percentage"] = coin["market_data"]["ath_change_percentage"]["usd"]
-        coin["ath_date"] = coin["market_data"]["ath_date"]["usd"]
-        coin["atl"] = coin["market_data"]["atl"]["usd"]
-        coin["atl_change_percentage"] = coin["market_data"]["atl_change_percentage"]["usd"]
-        coin["atl_date"] = coin["market_data"]["atl_date"]["usd"]
-        ret.append(coin)
-    return ret
 
 def total_count(coins_dict):
     counter = 0
