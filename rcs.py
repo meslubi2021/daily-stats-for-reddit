@@ -55,7 +55,7 @@ async def process_data(crypto_lizard, dataset_metadata, date, processing_date):
         logger.info("Done:\n")
         print_sample_output(data)
     if args.writedb:
-        logger.info("Storing to DB...\n")
+        logger.info("Storing to DB " + str(len(data)) + " elements.")
         db.store(data, dataset_metadata)
 
 if __name__ == "__main__":

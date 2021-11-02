@@ -16,12 +16,13 @@ DB_METADATA_COLLECTION = utils.get_env("DB_METADATA_COLLECTION") or config.get('
 URL = f"mongodb+srv://{USER}:{PASSWORD}@{DB_HOST}?retryWrites=true&w=majority"
 client = pymongo.MongoClient(URL, ssl_cert_reqs=ssl.CERT_NONE)
 db = client[DB_NAME]
-coll_coins = db[DB_COINS_COLLECTION]
-coll_metadata = db[DB_METADATA_COLLECTION]
+coll_coins = db["COINS_TESTING"]#DB_COINS_COLLECTION]
+coll_metadata = db["METADATA_TESTING"]#DB_METADATA_COLLECTION]
 
 def store(coins_dict, metadata):
     # update this dataset's metadata
     coll_metadata.insert_one(metadata.asdict())
     coins = [c.__dict__ for c in coins_dict.values()]
+    print("Storing " + str(len(coins)) + " coins")
     coll_coins.insert_many(coins)
     print("Done.")

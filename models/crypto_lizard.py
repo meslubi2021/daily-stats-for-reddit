@@ -5,6 +5,7 @@ import requests
 import json
 import asyncio
 import aiohttp
+import logging
 from datetime import datetime, time, timezone
 import config_reader as config
 import numpy as np
@@ -20,6 +21,10 @@ CRYPTO_DICT_NAME = os.path.dirname(__file__) + "/../res/crypto_list.npy"
 MARKET_CAP_API_URL = config.get('GENERAL','MARKET_CAP_URL')
 SINGLE_COIN_API_URL = config.get('GENERAL','SINGLE_COIN_API_URL')
 MIN_MARKET_CAP = int(config.get('GENERAL','MIN_MARKET_CAP'))
+LOG_LEVEL = utils.get_env("LOG_LEVEL") or config.get('GENERAL', 'LOG_LEVEL', fallback=None)
+
+logger = logging.getLogger(__name__)
+logger.setLevel(LOG_LEVEL)
 
 class CryptoLizard:
 
@@ -40,8 +45,7 @@ class CryptoLizard:
             if self.coins_dict:
                 self.reset_coins_dict()
         except FileNotFoundError as fe:
-            print(fe)
-            print("File not found.")
+            logger.warn("File not found: " + str(fe))
         return self.get_coins_dict()
 
     # downloads the crypto list and loads it in a dictionary with the appropriate keys to scan
@@ -60,8 +64,7 @@ class CryptoLizard:
         try:
             coins = utils.get_all_by_market_cap_asc()
         except Exception as e:
-            print(e)
-            print("Failed to fetch coins from API, falling back to latest cached file.")
+            logger.error("Failed to fetch coins from API, falling back to latest cached file. Exception is: " + str(e))
             return self.load_local_crypto_list()
 
         # Using a dict object to provide a duplicate key to update the values stored in the coin_and_counts
@@ -97,14 +100,11 @@ class CryptoLizard:
         self.shrunk_data = {se.symbol:se for se in sorted(shrunk_data_set, key = lambda x: x.count, reverse = False)}
         return self.shrunk_data
 
-    def overwrite_historic_data(self, data):
-        test = self.shrunk_data[data["symbol"]]
-        #TODO continue
-
     async def time_machine_shrunk_data(self, date):
         """
         overwrites market data with those for {date}
         """
+        logger.info("Applying time machine...")
         date_str = date.strftime('%d-%m-%Y')
         return await self.bulk_update_historic_data(date_str)
         
@@ -115,7 +115,7 @@ class CryptoLizard:
         all_coins = []
         while(True):
             with requests.Session() as s:
-                print("Fetching page: " + str(page))
+                logger.debug("Fetching page: " + str(page))
                 params = {
                     "vs_currency": "usd",
                     "order": "market_cap_asc",
@@ -208,11 +208,12 @@ class CryptoLizard:
             async with session.get(url, params=params) as resp:
                 json_response = await resp.json()
                 if "market_data" in json_response:
-                    if "current_price" in json_response["market_data"]:
+                    if "current_price" in json_response["market_data"]: 
                         self.shrunk_data[symbol].current_price = json_response["market_data"]["current_price"]["usd"]
                     if "market_cap" in json_response["market_data"]:
                         self.shrunk_data[symbol].market_cap = json_response["market_data"]["market_cap"]["usd"]
                     if "market_data" in json_response["market_data"]:
                         self.shrunk_data[symbol].total_volume = json_response["market_data"]["total_volume"]["usd"]
+            logger.debug("Updated " + symbol + " with time machine for date: " + date_str)
         except Exception as ex:
-            print("Error fetching history data: "+str(ex))
+            logger.warn("Error fetching history data: "+str(ex))
