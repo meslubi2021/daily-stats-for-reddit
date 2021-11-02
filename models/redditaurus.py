@@ -44,14 +44,13 @@ class Redditaurus:
         """ Get submission urls
         function to obtain a list of submission url / id objects for a given date
         """
-        date_start = 1635465626#int(datetime.combine(date, time.min).replace(tzinfo=timezone.utc).timestamp()) #1635465626#
-        date_end = 1635467426#int(datetime.combine(date, time.max) .replace(tzinfo=timezone.utc).timestamp()) #1635467426#
+        date_start = int(datetime.combine(date, time.min).replace(tzinfo=timezone.utc).timestamp()) #1635465626#
+        date_end = int(datetime.combine(date, time.max) .replace(tzinfo=timezone.utc).timestamp()) #1635467426#
 
         submissions = list(self.psAPI.search_submissions(after=date_start,
                             before=date_end,
                             subreddit=SUBREDDIT,
-                            filter=['url', 'id']))
-                                     
+                            filter=['url', 'id']))  
         return submissions
     
     async def process_submissions(
