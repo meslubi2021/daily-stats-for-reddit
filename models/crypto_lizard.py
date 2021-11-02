@@ -62,7 +62,7 @@ class CryptoLizard:
         # less popular coins. This way when a certain "duplicate" name or symbol is mentioned,
         # we will count it as the most popular (more likely to be mentioned) coin.
         try:
-            coins = utils.get_all_by_market_cap_asc()
+            coins = self.get_all_by_market_cap_asc()
         except Exception as e:
             logger.error("Failed to fetch coins from API, falling back to latest cached file. Exception is: " + str(e))
             return self.load_local_crypto_list()
