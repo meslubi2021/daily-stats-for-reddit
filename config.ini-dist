@@ -24,3 +24,4 @@ DB_HOST=xxxx.xxxx.xxxx.xxxx.xxxx/xxxxx
 DB_NAME=xxxxxxxxxx
 DB_METADATA_COLLECTION=xxxx
 DB_COINS_COLLECTION=xxxxxx
+SNAPSHOT_FOLDER_ID=xxxxx

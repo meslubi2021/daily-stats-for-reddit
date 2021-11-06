@@ -60,6 +60,7 @@ class Redditaurus:
             metadata,
             date,
             processing_date,
+            dataset_id,
             cb
         ) -> None:
 
@@ -93,7 +94,7 @@ class Redditaurus:
 
             await tasker.gather_with_concurrency(*jobs)
             # return result
-            await cb(crypto_lizard, metadata, date, processing_date)
+            await cb(crypto_lizard, metadata, date, processing_date, dataset_id)
             logger.info("Processed all " + str(len(submissions_urls)) + " submissions for date: " + str(date.date()) + " in " + str(int(t.time() - start_process)) + " seconds.")
 
     async def process_submission_from_url(
