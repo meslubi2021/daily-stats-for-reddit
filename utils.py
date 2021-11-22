@@ -146,5 +146,6 @@ BLACKLIST = [
     'ATH',
     'FOMO',
     'CMC',
-    'Cryptocurrency'
+    'Cryptocurrency',
+    'BAN'
 ]
