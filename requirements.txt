@@ -1,7 +1,7 @@
 asyncpraw==7.4.0
 pymongo[srv]==3.12.0
 praw==7.4.0
-aiohttp==3.7.4.post0
-numpy==1.20.1
-requests==2.24.0
+aiohttp==3.9.4
+numpy==1.22.0
+requests==2.32.2
 psaw==0.1.0
